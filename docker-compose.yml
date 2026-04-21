@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  muse-mail:
+    build: .
+    container_name: muse-mail
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/server/data
+    environment:
+      - PORT=3000
+      - LOG_LEVEL=info
+      # 如果设置了访问密码，请取消注释并修改下方的值
+      # - ACCESS_PASSWORD=your_password_here
