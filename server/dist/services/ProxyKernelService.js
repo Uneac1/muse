@@ -20,7 +20,10 @@ const integrationService = new IntegrationService_1.IntegrationService();
 const integrationModel = new IntegrationToken_1.IntegrationTokenModel();
 const proxyModel = new Proxy_1.ProxyModel();
 class ProxyKernelService {
-    dataDir = path_1.default.resolve(process.cwd(), 'data', 'proxy-kernel');
+    serverRoot = path_1.default.resolve(__dirname, '..', '..');
+    dataDir = path_1.default.join(this.serverRoot, 'data', 'proxy-kernel');
+    snapshotFile = path_1.default.join(this.serverRoot, 'data', 'integration-snapshots.json');
+    bundledBinaryPath = path_1.default.join(this.serverRoot, 'bin', 'mihomo', 'windows-amd64', 'mihomo.exe');
     stateFile = path_1.default.join(this.dataDir, 'state.json');
     zipFile = path_1.default.join(this.dataDir, 'mihomo.zip');
     extractDir = path_1.default.join(this.dataDir, 'core');
@@ -30,6 +33,7 @@ class ProxyKernelService {
     constructor() {
         fs_1.default.mkdirSync(this.dataDir, { recursive: true });
         fs_1.default.mkdirSync(this.workDir, { recursive: true });
+        this.bootstrapBundledBinary();
     }
     async getStatus() {
         const state = this.readState();
@@ -83,9 +87,10 @@ class ProxyKernelService {
         return this.getStatus();
     }
     async startKernel(payload) {
-        const status = await this.getStatus();
+        let status = await this.getStatus();
         if (!status.installed || !status.binaryPath || !fs_1.default.existsSync(status.binaryPath)) {
-            throw new Error('内置代理核心尚未安装，请先下载 mihomo');
+            logger_1.default.info('mihomo core not installed, auto-downloading before start');
+            status = await this.downloadLatestCore();
         }
         const source = status.availableSources.find((item) => item.key === payload.sourceKey)
             || (payload.sourceUrl ? { key: payload.sourceKey, label: payload.sourceLabel || payload.sourceKey, url: payload.sourceUrl, kind: 'profile' } : null);
@@ -229,11 +234,12 @@ class ProxyKernelService {
         return null;
     }
     readState() {
+        const bundledInstalled = fs_1.default.existsSync(this.bundledBinaryPath);
         if (!fs_1.default.existsSync(this.stateFile)) {
             return {
-                installed: false,
+                installed: bundledInstalled,
                 version: '',
-                binaryPath: '',
+                binaryPath: bundledInstalled ? this.bundledBinaryPath : '',
                 running: false,
                 pid: null,
                 lastError: '',
@@ -250,9 +256,9 @@ class ProxyKernelService {
         try {
             const parsed = JSON.parse(fs_1.default.readFileSync(this.stateFile, 'utf8'));
             return {
-                installed: !!parsed.installed,
+                installed: bundledInstalled || !!parsed.installed,
                 version: parsed.version || '',
-                binaryPath: parsed.binaryPath || '',
+                binaryPath: bundledInstalled ? this.bundledBinaryPath : parsed.binaryPath || '',
                 running: false,
                 pid: null,
                 lastError: parsed.lastError || '',
@@ -289,11 +295,22 @@ class ProxyKernelService {
         fs_1.default.mkdirSync(this.dataDir, { recursive: true });
         fs_1.default.writeFileSync(this.stateFile, JSON.stringify(state, null, 2), 'utf8');
     }
+    bootstrapBundledBinary() {
+        if (!fs_1.default.existsSync(this.bundledBinaryPath))
+            return;
+        const current = this.readState();
+        if (current.binaryPath === this.bundledBinaryPath && current.installed)
+            return;
+        current.installed = true;
+        current.binaryPath = this.bundledBinaryPath;
+        current.updatedAt = current.updatedAt || new Date().toISOString();
+        this.writeState(current);
+    }
     async getAvailableSources() {
         const record = this.getMiSubRecord();
-        if (!record)
-            return [];
-        const data = await integrationService.fetchMiSubData(record).catch(() => null);
+        const data = record
+            ? await integrationService.fetchMiSubData(record).catch(() => this.readMiSubSnapshot())
+            : this.readMiSubSnapshot();
         if (!data?.connected)
             return [];
         const root = data.baseUrl.replace(/\/+$/, '');
@@ -315,6 +332,26 @@ class ProxyKernelService {
         }))
             .filter((item) => item.url);
         return [...profileSources, ...subscriptionSources];
+    }
+    readMiSubSnapshot() {
+        try {
+            if (!fs_1.default.existsSync(this.snapshotFile))
+                return null;
+            const store = JSON.parse(fs_1.default.readFileSync(this.snapshotFile, 'utf8'));
+            const candidates = Object.entries(store)
+                .filter(([key, entry]) => key.startsWith('misub-summary:') && entry?.value)
+                .sort((a, b) => Number(b[1]?.updatedAt || 0) - Number(a[1]?.updatedAt || 0));
+            for (const [, entry] of candidates) {
+                const value = entry.value;
+                if (value?.connected && (value.misubs?.length || value.profiles?.length)) {
+                    return value;
+                }
+            }
+        }
+        catch (error) {
+            logger_1.default.warn(`Failed to read MiSub snapshot fallback: ${String(error)}`);
+        }
+        return null;
     }
     getMiSubRecord() {
         return integrationModel.get('misub');

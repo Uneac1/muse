@@ -1,0 +1,16 @@
+{
+  "installed": true,
+  "version": "",
+  "binaryPath": "C:\\Users\\1\\Desktop\\muse\\Muse\\server\\bin\\mihomo\\windows-amd64\\mihomo.exe",
+  "running": true,
+  "pid": 17304,
+  "lastError": "",
+  "sourceKey": "profile:3b3233db-62f9-48aa-8d5a-b94b9a8c9eb1",
+  "sourceLabel": "分组 · gss",
+  "sourceUrl": "https://misub.y130.icu/profiles/3b3233db-62f9-48aa-8d5a-b94b9a8c9eb1",
+  "mixedPort": 7890,
+  "socksPort": 17890,
+  "httpPort": 17891,
+  "previousDefaultProxyId": null,
+  "updatedAt": "2026-04-21T09:53:14.121Z"
+}

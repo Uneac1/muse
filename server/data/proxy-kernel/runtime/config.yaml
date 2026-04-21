@@ -1,0 +1,32 @@
+mixed-port: 7890
+socks-port: 17890
+port: 17891
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:19090
+dns:
+  enable: true
+  ipv6: false
+  listen: 127.0.0.1:1053
+  enhanced-mode: fake-ip
+  nameserver:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+proxy-providers:
+  muse_provider:
+    type: http
+    url: "https://misub.y130.icu/profiles/3b3233db-62f9-48aa-8d5a-b94b9a8c9eb1"
+    path: "C:/Users/1/Desktop/muse/Muse/server/data/proxy-kernel/runtime/provider.yaml"
+    interval: 3600
+    health-check:
+      enable: true
+      interval: 600
+      url: https://www.gstatic.com/generate_204
+proxy-groups:
+  - name: PROXY
+    type: select
+    use:
+      - muse_provider
+rules:
+  - MATCH,PROXY

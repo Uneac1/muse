@@ -9,6 +9,7 @@ const ProxyKernelController_1 = require("../controllers/ProxyKernelController");
 exports.proxyKernelRoutes = new koa_router_1.default();
 const ctrl = new ProxyKernelController_1.ProxyKernelController();
 exports.proxyKernelRoutes.get('/', ctrl.status);
+exports.proxyKernelRoutes.get('/status', ctrl.status);
 exports.proxyKernelRoutes.post('/download', ctrl.download);
 exports.proxyKernelRoutes.post('/start', ctrl.start);
 exports.proxyKernelRoutes.post('/stop', ctrl.stop);

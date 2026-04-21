@@ -166,7 +166,7 @@ export const proxyApi = {
 export const proxyKernelApi = {
   status: () => request<ProxyKernelStatus>('/proxy-kernel'),
   download: () => request<ProxyKernelStatus>('/proxy-kernel/download', { method: 'POST', body: JSON.stringify({}) }),
-  start: (data: { sourceKey: string; mixedPort?: number; socksPort?: number; httpPort?: number }) =>
+  start: (data: { sourceKey: string; sourceUrl?: string; sourceLabel?: string; mixedPort?: number; socksPort?: number; httpPort?: number }) =>
     request<ProxyKernelStatus>('/proxy-kernel/start', { method: 'POST', body: JSON.stringify(data) }),
   stop: () => request<ProxyKernelStatus>('/proxy-kernel/stop', { method: 'POST', body: JSON.stringify({}) }),
 };

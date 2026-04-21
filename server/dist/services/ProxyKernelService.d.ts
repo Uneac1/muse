@@ -24,7 +24,10 @@ export interface ProxyKernelStatus extends KernelState {
     availableSources: ProxyKernelSource[];
 }
 export declare class ProxyKernelService {
+    private serverRoot;
     private dataDir;
+    private snapshotFile;
+    private bundledBinaryPath;
     private stateFile;
     private zipFile;
     private extractDir;
@@ -50,7 +53,9 @@ export declare class ProxyKernelService {
     private findBinary;
     private readState;
     private writeState;
+    private bootstrapBundledBinary;
     private getAvailableSources;
+    private readMiSubSnapshot;
     private getMiSubRecord;
     private waitForReady;
     private findKernelProxy;

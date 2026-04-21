@@ -1,10 +1,45 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useProxyStore } from '../stores/proxy';
-import type { Proxy, ProxyKernelStatus } from '../types';
+import type { MiSubIntegrationData, Proxy, ProxyKernelSource, ProxyKernelStatus } from '../types';
 import ProxyTable from '../components/proxy/ProxyTable';
 import ProxyForm from '../components/proxy/ProxyForm';
 import { proxyKernelApi } from '../lib/api';
+import { readIntegrationCache } from '../lib/integrationCache';
+
+const MISUB_CACHE_KEY = 'muse.integration.misub';
+
+function normalizeBaseUrl(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  return (/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`).replace(/\/+$/, '');
+}
+
+function buildSourcesFromMiSubCache(cached: MiSubIntegrationData | null): ProxyKernelSource[] {
+  if (!cached?.connected) return [];
+  const root = normalizeBaseUrl(cached.baseUrl || '');
+  const profileToken = cached.settings?.profileToken || '';
+
+  const profiles = (cached.profiles || [])
+    .map((profile) => ({
+      key: `profile:${profile.id}`,
+      label: `分组 · ${profile.name}`,
+      url: profileToken ? `${root}/${profileToken}/${profile.customId || profile.id}` : '',
+      kind: 'profile' as const,
+    }))
+    .filter((item) => item.url);
+
+  const subscriptions = (cached.misubs || [])
+    .map((item) => ({
+      key: `subscription:${item.id}`,
+      label: `订阅 · ${item.name}`,
+      url: item.url,
+      kind: 'subscription' as const,
+    }))
+    .filter((item) => item.url);
+
+  return [...profiles, ...subscriptions];
+}
 
 export default function ProxySettings() {
   const { proxies, loading, fetchProxies, createProxy, updateProxy, deleteProxy, testProxy, setDefault, setEnabled } = useProxyStore();
@@ -14,13 +49,18 @@ export default function ProxySettings() {
   const [kernelLoading, setKernelLoading] = useState(true);
   const [kernelBusy, setKernelBusy] = useState(false);
   const [kernelSourceKey, setKernelSourceKey] = useState('');
+  const [fallbackSources, setFallbackSources] = useState<ProxyKernelSource[]>([]);
 
   const loadKernelStatus = async () => {
     setKernelLoading(true);
     try {
       const status = await proxyKernelApi.status();
       setKernel(status);
-      setKernelSourceKey(status.sourceKey || status.availableSources[0]?.key || '');
+      const cachedMiSub = readIntegrationCache<MiSubIntegrationData>(MISUB_CACHE_KEY).value || null;
+      const nextFallbackSources = buildSourcesFromMiSubCache(cachedMiSub);
+      setFallbackSources(nextFallbackSources);
+      const visibleSources = status.availableSources.length ? status.availableSources : nextFallbackSources;
+      setKernelSourceKey(status.sourceKey || visibleSources[0]?.key || '');
     } finally {
       setKernelLoading(false);
     }
@@ -99,7 +139,8 @@ export default function ProxySettings() {
       setKernelBusy(true);
       const next = await proxyKernelApi.download();
       setKernel(next);
-      setKernelSourceKey(next.sourceKey || next.availableSources[0]?.key || '');
+      const visibleSources = next.availableSources.length ? next.availableSources : fallbackSources;
+      setKernelSourceKey(next.sourceKey || visibleSources[0]?.key || '');
       toast.success(`mihomo 已下载：${next.version || 'latest'}`);
     } catch (e: any) {
       toast.error(e.message || '下载内置代理核心失败');
@@ -115,7 +156,13 @@ export default function ProxySettings() {
     }
     try {
       setKernelBusy(true);
-      const next = await proxyKernelApi.start({ sourceKey: kernelSourceKey });
+      const visibleSources = kernel?.availableSources?.length ? kernel.availableSources : fallbackSources;
+      const selectedSource = visibleSources.find((item) => item.key === kernelSourceKey);
+      const next = await proxyKernelApi.start({
+        sourceKey: kernelSourceKey,
+        sourceUrl: selectedSource?.url,
+        sourceLabel: selectedSource?.label,
+      });
       setKernel(next);
       await fetchProxies();
       toast.success('内置代理内核已启动，并已切到默认代理');
@@ -162,19 +209,21 @@ export default function ProxySettings() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">内置代理内核</h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Muse server 托管 `mihomo`，直接把 MiSub 分组/订阅链接转换成可用的本地代理端口。</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Muse server 已内置 `mihomo`，直接把 MiSub 分组/订阅链接转换成可用的本地代理端口。选好链接后直接启动即可。</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleDownloadKernel}
-              disabled={kernelBusy}
-              className="px-4 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
-            >
-              下载核心
-            </button>
+            {!kernel?.installed && (
+              <button
+                onClick={handleDownloadKernel}
+                disabled={kernelBusy}
+                className="px-4 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+              >
+                下载核心
+              </button>
+            )}
             <button
               onClick={handleStartKernel}
-              disabled={kernelBusy || !kernel?.installed || !kernelSourceKey}
+              disabled={kernelBusy || !kernelSourceKey}
               className="px-4 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
             >
               启动
@@ -219,11 +268,17 @@ export default function ProxySettings() {
               className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">选择一个分组或订阅链接</option>
-              {(kernel?.availableSources || []).map((source) => (
+              {((kernel?.availableSources?.length ? kernel.availableSources : fallbackSources) || []).map((source) => (
                 <option key={source.key} value={source.key}>{source.label}</option>
               ))}
             </select>
           </div>
+
+          {!kernel?.availableSources?.length && fallbackSources.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+              当前分组列表来自订阅管理本地缓存，因为后端还没有保存 `misub` 连接记录。
+            </div>
+          )}
 
           {kernel?.sourceUrl && (
             <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 p-3 text-xs text-zinc-500 dark:text-zinc-400 break-all">
