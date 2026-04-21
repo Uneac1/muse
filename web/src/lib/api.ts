@@ -9,6 +9,7 @@ import type {
   ExportRequest,
   DashboardStats,
   ProxyTestResult,
+  ProxyKernelStatus,
   FetchMailsResult,
   SendMailRequest,
   Tag,
@@ -160,6 +161,14 @@ export const proxyApi = {
     request<Proxy>(`/proxies/${id}/default`, { method: 'PUT' }),
   setEnabled: (id: number, enabled: boolean) =>
     request<Proxy>(`/proxies/${id}/enabled`, { method: 'PUT', body: JSON.stringify({ enabled }) }),
+};
+
+export const proxyKernelApi = {
+  status: () => request<ProxyKernelStatus>('/proxy-kernel'),
+  download: () => request<ProxyKernelStatus>('/proxy-kernel/download', { method: 'POST', body: JSON.stringify({}) }),
+  start: (data: { sourceKey: string; mixedPort?: number; socksPort?: number; httpPort?: number }) =>
+    request<ProxyKernelStatus>('/proxy-kernel/start', { method: 'POST', body: JSON.stringify(data) }),
+  stop: () => request<ProxyKernelStatus>('/proxy-kernel/stop', { method: 'POST', body: JSON.stringify({}) }),
 };
 
 export const dashboardApi = {

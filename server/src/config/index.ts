@@ -3,10 +3,10 @@ import path from 'path';
 import fs from 'fs';
 
 const envCandidates = [
-  path.resolve(__dirname, '../../../.env.example'),
-  path.resolve(__dirname, '../../.env.example'),
   path.resolve(__dirname, '../../../.env'),
   path.resolve(__dirname, '../../.env'),
+  path.resolve(__dirname, '../../../.env.example'),
+  path.resolve(__dirname, '../../.env.example'),
 ];
 
 for (const envPath of envCandidates) {
@@ -27,10 +27,15 @@ const dbPath = process.env.DB_PATH
 
 export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
-  serverOrigin: process.env.SERVER_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`,
+  serverOrigin:
+    process.env.SERVER_ORIGIN ||
+    process.env.WEB_APP_ORIGIN ||
+    `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`,
   logLevel: process.env.LOG_LEVEL || 'info',
   dbPath,
   accessPassword: process.env.ACCESS_PASSWORD || '',
+  googleClientId: process.env.GOOGLE_CLIENT_ID || process.env.ADMIN_GOOGLE_CLIENT_ID || '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || process.env.ADMIN_GOOGLE_CLIENT_SECRET || '',
   adminGoogleClientId: process.env.ADMIN_GOOGLE_CLIENT_ID || '',
   adminGoogleClientSecret: process.env.ADMIN_GOOGLE_CLIENT_SECRET || '',
   adminAllowedEmails: (process.env.ADMIN_ALLOWED_EMAILS || '')
@@ -45,11 +50,17 @@ export const config = {
   defaultYmailAdminPassword: process.env.DEFAULT_YMAIL_ADMIN_PASSWORD || '',
   ymailSiteUrl: process.env.YMAIL_SITE_URL || 'https://ymail.y130.icu',
   ymailApiBaseUrl: process.env.YMAIL_API_BASE_URL || 'https://ymail-api.y130.icu',
-  webAppOrigin: process.env.WEB_APP_ORIGIN || 'http://localhost:5173',
+  webAppOrigin:
+    process.env.WEB_APP_ORIGIN ||
+    process.env.SERVER_ORIGIN ||
+    `http://localhost:5173`,
   openaiOAuthRedirectUri:
-    process.env.OPENAI_OAUTH_REDIRECT_URI || `${process.env.SERVER_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`}/api/oauth/openai/callback`,
+    process.env.OPENAI_OAUTH_REDIRECT_URI ||
+    `${process.env.SERVER_ORIGIN || process.env.WEB_APP_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`}/api/oauth/openai/callback`,
   googleOAuthRedirectUri:
-    process.env.GOOGLE_OAUTH_REDIRECT_URI || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}/api/oauth/google/callback`,
+    process.env.GOOGLE_OAUTH_REDIRECT_URI ||
+    `${process.env.SERVER_ORIGIN || process.env.WEB_APP_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`}/api/oauth/google/callback`,
   adminGoogleOAuthRedirectUri:
-    process.env.ADMIN_GOOGLE_OAUTH_REDIRECT_URI || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}/api/auth/google/callback`,
+    process.env.ADMIN_GOOGLE_OAUTH_REDIRECT_URI ||
+    `${process.env.SERVER_ORIGIN || process.env.WEB_APP_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`}/api/auth/google/callback`,
 };

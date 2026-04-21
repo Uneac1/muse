@@ -132,8 +132,8 @@ export class OAuthController {
   async authorizeGoogle(ctx: Context) {
     cleanupExpiredStates();
     const { client_id, client_secret, login_hint, scope, prompt } = ctx.request.body as any;
-    const clientId = String(client_id || config.adminGoogleClientId || '').trim();
-    const clientSecret = String(client_secret || config.adminGoogleClientSecret || '').trim();
+    const clientId = String(client_id || config.googleClientId || '').trim();
+    const clientSecret = String(client_secret || config.googleClientSecret || '').trim();
     if (!clientId || !clientSecret) {
       return fail(ctx, 'google oauth client is not configured', 400);
     }

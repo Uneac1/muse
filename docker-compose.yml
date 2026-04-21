@@ -10,4 +10,4 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/server/data
+      - ./server/data:/app/server/data

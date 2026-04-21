@@ -1,6 +1,8 @@
 .omc/
 node_modules/
 dist/
+server/dist/
+web/dist/
 *.log
 .env
 .env.local
@@ -14,3 +16,7 @@ web/src/components/ui/
 .claude/
 .codex-*/
 .env.example
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+server/data/integration-snapshots.json

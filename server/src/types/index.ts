@@ -220,6 +220,31 @@ export interface ProxyTestResult {
   status: 'active' | 'failed';
 }
 
+export interface ProxyKernelSource {
+  key: string;
+  label: string;
+  url: string;
+  kind: 'profile' | 'subscription';
+}
+
+export interface ProxyKernelStatus {
+  installed: boolean;
+  version: string;
+  binaryPath: string;
+  running: boolean;
+  pid: number | null;
+  lastError: string;
+  sourceKey: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  mixedPort: number;
+  socksPort: number;
+  httpPort: number;
+  previousDefaultProxyId: number | null;
+  updatedAt: string | null;
+  availableSources: ProxyKernelSource[];
+}
+
 export interface FetchMailsResult {
   mails: MailMessage[];
   total: number;

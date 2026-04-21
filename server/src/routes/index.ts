@@ -12,6 +12,7 @@ import { aiRoutes } from './ai';
 import { tokenRoutes } from './tokens';
 import { newspaperRoutes } from './newspaper';
 import { osRoutes } from './os';
+import { proxyKernelRoutes } from './proxy-kernel';
 
 const router = new Router({ prefix: '/api' });
 
@@ -28,5 +29,6 @@ router.use('/ai', aiRoutes.routes(), aiRoutes.allowedMethods());
 router.use('/tokens', tokenRoutes.routes(), tokenRoutes.allowedMethods());
 router.use('/newspaper', newspaperRoutes.routes(), newspaperRoutes.allowedMethods());
 router.use('/os', osRoutes.routes(), osRoutes.allowedMethods());
+router.use('/proxy-kernel', proxyKernelRoutes.routes(), proxyKernelRoutes.allowedMethods());
 
 export default router;

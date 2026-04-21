@@ -1,0 +1,17 @@
+node_modules
+server/node_modules
+web/node_modules
+.git
+.codex-chrome
+.codex-logs
+.codex-*
+*.log
+server/*.log
+web/*.log
+server/data
+server/dist
+web/dist
+doc
+docs
+README.md
+DEPLOY.md

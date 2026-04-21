@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import type { Proxy } from '../../types';
+import type { MiSubIntegrationData } from '../../types';
+import { integrationApi } from '../../lib/api';
 
 interface Props {
   open: boolean;
@@ -10,9 +13,39 @@ interface Props {
 
 const initialForm = { name: '', type: 'socks5' as 'socks5' | 'http', host: '', port: 1080, username: '', password: '', is_default: false };
 
+type SourceMode = 'manual' | 'misub';
+
+function normalizeBaseUrl(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  return (/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`).replace(/\/+$/, '');
+}
+
+function parseProxyEndpoint(value: string) {
+  try {
+    const url = new URL(value);
+    const protocol = url.protocol.toLowerCase();
+    if (!['http:', 'https:', 'socks:', 'socks5:'].includes(protocol)) return null;
+
+    return {
+      type: protocol === 'http:' || protocol === 'https:' ? 'http' as const : 'socks5' as const,
+      host: url.hostname,
+      port: Number(url.port || (protocol === 'http:' || protocol === 'https:' ? 80 : 1080)),
+      username: decodeURIComponent(url.username || ''),
+      password: decodeURIComponent(url.password || ''),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
+  const [sourceMode, setSourceMode] = useState<SourceMode>('manual');
+  const [miSubLoading, setMiSubLoading] = useState(false);
+  const [miSubData, setMiSubData] = useState<MiSubIntegrationData | null>(null);
+  const [selectedMiSubEntry, setSelectedMiSubEntry] = useState('');
 
   useEffect(() => {
     if (proxy) {
@@ -28,9 +61,90 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
     } else {
       setForm(initialForm);
     }
+    setSourceMode('manual');
+    setSelectedMiSubEntry('');
   }, [proxy, open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setMiSubLoading(true);
+    integrationApi.getMiSub()
+      .then((data) => {
+        if (!cancelled) {
+          setMiSubData(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMiSubData(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setMiSubLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   if (!open) return null;
+
+  const miSubEntries = useMemo(() => {
+    if (!miSubData?.connected) return [];
+    const root = normalizeBaseUrl(miSubData.baseUrl);
+    const profileToken = miSubData.settings?.profileToken || '';
+    const profileEntries = (miSubData.profiles || []).map((profile) => ({
+      key: `profile:${profile.id}`,
+      label: `分组 · ${profile.name}`,
+      url: profileToken ? `${root}/${profileToken}/${profile.customId || profile.id}` : '',
+    })).filter((item) => item.url);
+
+    const subscriptionEntries = (miSubData.misubs || []).map((item) => ({
+      key: `subscription:${item.id}`,
+      label: `订阅 · ${item.name}`,
+      url: item.url,
+    })).filter((item) => item.url);
+
+    return [...profileEntries, ...subscriptionEntries];
+  }, [miSubData]);
+
+  const selectedEntry = miSubEntries.find((item) => item.key === selectedMiSubEntry);
+
+  const importFromMiSub = () => {
+    if (!selectedEntry) {
+      toast.error('先选择一个订阅或分组链接');
+      return;
+    }
+
+    const parsed = parseProxyEndpoint(selectedEntry.url);
+    if (parsed) {
+      setForm((current) => ({
+        ...current,
+        name: current.name || selectedEntry.label,
+        type: parsed.type,
+        host: parsed.host,
+        port: parsed.port,
+        username: parsed.username,
+        password: parsed.password,
+      }));
+      toast.success('已从订阅管理导入代理地址');
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      name: current.name || selectedEntry.label,
+      type: 'socks5',
+      host: current.host || '127.0.0.1',
+      port: current.port || 7890,
+    }));
+    toast.success('检测到这是订阅链接，已按本地代理客户端模式预填，可继续改成你的实际端口');
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -52,6 +166,74 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
           {proxy ? '编辑代理' : '添加代理'}
         </h2>
         <div className="space-y-3">
+          <div>
+            <label className={labelCls}>来源</label>
+            <div className="flex gap-4 mt-1">
+              {([
+                ['manual', '手动输入'],
+                ['misub', '订阅管理'],
+              ] as const).map(([mode, label]) => (
+                <label key={mode} className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="sourceMode"
+                    checked={sourceMode === mode}
+                    onChange={() => setSourceMode(mode)}
+                    className="accent-blue-600"
+                  />
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {sourceMode === 'misub' && (
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">从订阅管理导入</div>
+                  <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    支持直接读取 MiSub 的订阅和分组链接。若链接本身不是 HTTP / SOCKS 代理地址，会自动按本地代理客户端模式预填。
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={importFromMiSub}
+                  disabled={!selectedEntry}
+                  className="px-3 py-2 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  导入
+                </button>
+              </div>
+
+              {miSubLoading ? (
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">正在读取订阅管理...</div>
+              ) : !miSubData?.connected ? (
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">MiSub 尚未连接，先去订阅管理页面连接后再回来导入。</div>
+              ) : miSubEntries.length === 0 ? (
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">MiSub 已连接，但当前没有可导入的订阅或分组链接。</div>
+              ) : (
+                <>
+                  <select
+                    value={selectedMiSubEntry}
+                    onChange={(e) => setSelectedMiSubEntry(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">选择订阅或分组链接</option>
+                    {miSubEntries.map((entry) => (
+                      <option key={entry.key} value={entry.key}>{entry.label}</option>
+                    ))}
+                  </select>
+                  {selectedEntry && (
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 break-all">
+                      当前链接：{selectedEntry.url}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           <div>
             <label className={labelCls}>名称</label>
             <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="我的代理" />

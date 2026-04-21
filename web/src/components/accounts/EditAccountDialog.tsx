@@ -132,16 +132,11 @@ export default function EditAccountDialog({ open, account, onClose, onSave, tags
   };
 
   const handleGoogleOAuth = async () => {
-    if (!form.client_id || !form.client_secret) {
-      alert('请先填写 Google 的 Client ID 和 Client Secret。');
-      return;
-    }
-
     setOauthLoading(true);
     try {
       const result = await oauthApi.googleAuthorize({
-        client_id: form.client_id,
-        client_secret: form.client_secret,
+        client_id: form.client_id || undefined,
+        client_secret: form.client_secret || undefined,
         login_hint: form.email || undefined,
       });
 
@@ -285,7 +280,7 @@ export default function EditAccountDialog({ open, account, onClose, onSave, tags
               <div>
                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Gmail 授权接入</p>
                 <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                  不需要手动填写邮箱、密码、Client ID、Secret 或 Refresh Token。点击下面按钮完成 Google 授权后会自动回填。
+                  不需要手动填写邮箱、密码、Client ID、Secret 或 Refresh Token。点击下面按钮完成 Google 授权后会自动回填；如果服务端已配置 Google OAuth，也会直接复用服务端配置。
                 </p>
               </div>
               <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-white/80 px-3 py-2 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-zinc-900/40 dark:text-blue-300">

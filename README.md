@@ -85,7 +85,9 @@ npm run install:all
 | `DEFAULT_GITHUB_TOKEN` | 空 | 默认 GitHub Token，仅建议放本地 `.env` |
 | `DEFAULT_CLOUDFLARE_TOKEN` | 空 | 默认 Cloudflare Token，仅建议放本地 `.env` |
 | `DEFAULT_NOTION_TOKEN` | 空 | 默认 Notion integration token，仅建议放本地 `.env` |
-| `GOOGLE_OAUTH_REDIRECT_URI` | `http://localhost:$PORT/api/oauth/google/callback` | Google OAuth 回调地址 |
+| `SERVER_ORIGIN` | 空 | 服务对外访问地址，生产环境建议写成 `https://你的域名` |
+| `WEB_APP_ORIGIN` | 空 | 前端对外访问地址；前后端同域部署时通常与 `SERVER_ORIGIN` 相同 |
+| `GOOGLE_OAUTH_REDIRECT_URI` | `SERVER_ORIGIN/api/oauth/google/callback` | Google OAuth 回调地址 |
 
 为了兼容旧数据，如果没有显式设置 `DB_PATH` 且本地已有 `server/data/outlook.db`，服务会自动继续使用旧数据库。
 
@@ -102,7 +104,7 @@ npm run dev
 
 1. 在 Google Cloud Console 创建 OAuth 2.0 Client。
 2. 把回调地址加入允许列表，默认使用：
-   `http://localhost:3000/api/oauth/google/callback`
+   `SERVER_ORIGIN/api/oauth/google/callback`
 3. 在“新增邮箱”弹窗中选择 `Google / Gmail`。
 4. 填入 `Client ID` 和 `Client Secret`，点击“连接 Gmail”。
 5. 完成 Google 授权后，应用会自动回填邮箱地址与刷新令牌。
@@ -121,6 +123,10 @@ npm run dev
 npm run build
 npm start
 ```
+
+生产环境建议先执行根目录的 `npm run build`，它会同时构建前端和后端，然后再启动已经编译好的 `server/dist/server.js`。
+
+生产部署到 VPS 时，务必把 `.env` 里的 `SERVER_ORIGIN`、`WEB_APP_ORIGIN` 和各类 OAuth 回调地址改成正式域名；前端构建后会通过同域 `/api` 访问后端，不需要再保留本地开发地址。
 
 ## 账户导入格式
 
