@@ -1,0 +1,234 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/dashboard/RecentMails.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=412b9a55"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import { motion } from "/node_modules/.vite/deps/framer-motion.js?v=412b9a55";
+import { Mail, Clock, Inbox, AlertTriangle } from "/node_modules/.vite/deps/lucide-react.js?v=412b9a55";
+import { timeAgo, getInitials, getAvatarColor } from "/src/lib/utils.ts";
+function MailItem({ mail, index }) {
+  const initials = getInitials(mail.sender_name || mail.sender);
+  const avatarBg = getAvatarColor(mail.sender);
+  return /* @__PURE__ */ jsxDEV(
+    motion.div,
+    {
+      initial: { opacity: 0, x: -12 },
+      animate: { opacity: 1, x: 0 },
+      transition: { duration: 0.25, delay: index * 0.04 },
+      className: "flex items-center gap-3 rounded-md px-3 py-2.5 hover:bg-secondary/50 transition-colors",
+      children: [
+        /* @__PURE__ */ jsxDEV(
+          "div",
+          {
+            className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white",
+            style: { backgroundColor: avatarBg },
+            children: initials
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+            lineNumber: 36,
+            columnNumber: 7
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV("div", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between gap-2", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm font-medium text-foreground truncate", children: mail.sender_name || mail.sender }, void 0, false, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+              lineNumber: 44,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "text-[11px] text-muted-foreground whitespace-nowrap flex items-center gap-1", children: [
+              /* @__PURE__ */ jsxDEV(Clock, { className: "h-3 w-3" }, void 0, false, {
+                fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+                lineNumber: 48,
+                columnNumber: 13
+              }, this),
+              timeAgo(mail.mail_date)
+            ] }, void 0, true, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+              lineNumber: 47,
+              columnNumber: 11
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+            lineNumber: 43,
+            columnNumber: 9
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-muted-foreground truncate mt-0.5", children: mail.subject || "(无主题)" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+            lineNumber: 52,
+            columnNumber: 9
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+          lineNumber: 42,
+          columnNumber: 7
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "span",
+          {
+            className: `text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${mail.mailbox === "INBOX" ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500"}`,
+            children: mail.mailbox === "INBOX" ? "收件箱" : "垃圾箱"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+            lineNumber: 56,
+            columnNumber: 7
+          },
+          this
+        )
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+      lineNumber: 30,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c = MailItem;
+function EmptyState() {
+  return /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col items-center justify-center py-10 text-muted-foreground", children: [
+    /* @__PURE__ */ jsxDEV(Mail, { className: "h-10 w-10 mb-2 opacity-30" }, void 0, false, {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+      lineNumber: 72,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("p", { className: "text-sm", children: "暂无邮件数据" }, void 0, false, {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+      lineNumber: 73,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+    lineNumber: 71,
+    columnNumber: 5
+  }, this);
+}
+_c2 = EmptyState;
+export function RecentMails({ mails }) {
+  const inboxCount = mails.filter((m) => m.mailbox === "INBOX").length;
+  const junkCount = mails.filter((m) => m.mailbox === "Junk").length;
+  return /* @__PURE__ */ jsxDEV(
+    motion.div,
+    {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.4, delay: 0.35 },
+      className: "glass-card flex flex-col",
+      children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between px-5 py-4 border-b border-border", children: [
+          /* @__PURE__ */ jsxDEV("h2", { className: "text-sm font-semibold text-foreground flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV(Mail, { className: "h-4 w-4 text-primary" }, void 0, false, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+              lineNumber: 91,
+              columnNumber: 11
+            }, this),
+            "最近邮件"
+          ] }, void 0, true, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+            lineNumber: 90,
+            columnNumber: 9
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3 text-xs text-muted-foreground", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "flex items-center gap-1", children: [
+              /* @__PURE__ */ jsxDEV(Inbox, { className: "h-3 w-3 text-primary" }, void 0, false, {
+                fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+                lineNumber: 96,
+                columnNumber: 13
+              }, this),
+              " ",
+              inboxCount
+            ] }, void 0, true, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+              lineNumber: 95,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "flex items-center gap-1", children: [
+              /* @__PURE__ */ jsxDEV(AlertTriangle, { className: "h-3 w-3 text-amber-500" }, void 0, false, {
+                fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+                lineNumber: 99,
+                columnNumber: 13
+              }, this),
+              " ",
+              junkCount
+            ] }, void 0, true, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+              lineNumber: 98,
+              columnNumber: 11
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+            lineNumber: 94,
+            columnNumber: 9
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+          lineNumber: 89,
+          columnNumber: 7
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex-1 overflow-y-auto max-h-[360px] p-2", children: mails.length > 0 ? mails.map((mail, i) => /* @__PURE__ */ jsxDEV(MailItem, { mail, index: i }, mail.id, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+          lineNumber: 105,
+          columnNumber: 32
+        }, this)) : /* @__PURE__ */ jsxDEV(EmptyState, {}, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+          lineNumber: 107,
+          columnNumber: 9
+        }, this) }, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+          lineNumber: 103,
+          columnNumber: 7
+        }, this)
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx",
+      lineNumber: 83,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c3 = RecentMails;
+var _c, _c2, _c3;
+$RefreshReg$(_c, "MailItem");
+$RefreshReg$(_c2, "EmptyState");
+$RefreshReg$(_c3, "RecentMails");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/1/Desktop/muse/Muse/web/src/components/dashboard/RecentMails.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QTtBQUVKO0FBQUNDLE1BbENlWDtBQUFXLElBQUFILElBQUFFLEtBQUFZO0FBQUEsYUFBQWQsSUFBQTtBQUFBLGFBQUFFLEtBQUE7QUFBQSxhQUFBWSxLQUFBIiwibmFtZXMiOlsibW90aW9uIiwiTWFpbCIsIkNsb2NrIiwiSW5ib3giLCJBbGVydFRyaWFuZ2xlIiwidGltZUFnbyIsImdldEluaXRpYWxzIiwiZ2V0QXZhdGFyQ29sb3IiLCJNYWlsSXRlbSIsIm1haWwiLCJpbmRleCIsImluaXRpYWxzIiwic2VuZGVyX25hbWUiLCJzZW5kZXIiLCJhdmF0YXJCZyIsIm9wYWNpdHkiLCJ4IiwiZHVyYXRpb24iLCJkZWxheSIsImJhY2tncm91bmRDb2xvciIsIm1haWxfZGF0ZSIsInN1YmplY3QiLCJtYWlsYm94IiwiX2MiLCJFbXB0eVN0YXRlIiwiX2MyIiwiUmVjZW50TWFpbHMiLCJtYWlscyIsImluYm94Q291bnQiLCJmaWx0ZXIiLCJtIiwibGVuZ3RoIiwianVua0NvdW50IiwieSIsIm1hcCIsImkiLCJpZCIsIl9jMyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJSZWNlbnRNYWlscy50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgbW90aW9uIH0gZnJvbSAnZnJhbWVyLW1vdGlvbic7XG5pbXBvcnQgeyBNYWlsLCBDbG9jaywgSW5ib3gsIEFsZXJ0VHJpYW5nbGUgfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xuaW1wb3J0IHsgdGltZUFnbywgZ2V0SW5pdGlhbHMsIGdldEF2YXRhckNvbG9yIH0gZnJvbSAnLi4vLi4vbGliL3V0aWxzJztcbmltcG9ydCB0eXBlIHsgTWFpbE1lc3NhZ2UgfSBmcm9tICcuLi8uLi90eXBlcyc7XG5cbmZ1bmN0aW9uIE1haWxJdGVtKHsgbWFpbCwgaW5kZXggfTogeyBtYWlsOiBNYWlsTWVzc2FnZTsgaW5kZXg6IG51bWJlciB9KSB7XG4gIGNvbnN0IGluaXRpYWxzID0gZ2V0SW5pdGlhbHMobWFpbC5zZW5kZXJfbmFtZSB8fCBtYWlsLnNlbmRlcik7XG4gIGNvbnN0IGF2YXRhckJnID0gZ2V0QXZhdGFyQ29sb3IobWFpbC5zZW5kZXIpO1xuXG4gIHJldHVybiAoXG4gICAgPG1vdGlvbi5kaXZcbiAgICAgIGluaXRpYWw9e3sgb3BhY2l0eTogMCwgeDogLTEyIH19XG4gICAgICBhbmltYXRlPXt7IG9wYWNpdHk6IDEsIHg6IDAgfX1cbiAgICAgIHRyYW5zaXRpb249e3sgZHVyYXRpb246IDAuMjUsIGRlbGF5OiBpbmRleCAqIDAuMDQgfX1cbiAgICAgIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHJvdW5kZWQtbWQgcHgtMyBweS0yLjUgaG92ZXI6Ymctc2Vjb25kYXJ5LzUwIHRyYW5zaXRpb24tY29sb3JzXCJcbiAgICA+XG4gICAgICA8ZGl2XG4gICAgICAgIGNsYXNzTmFtZT1cImZsZXggaC05IHctOSBzaHJpbmstMCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1mdWxsIHRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LXdoaXRlXCJcbiAgICAgICAgc3R5bGU9e3sgYmFja2dyb3VuZENvbG9yOiBhdmF0YXJCZyB9fVxuICAgICAgPlxuICAgICAgICB7aW5pdGlhbHN9XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWluLXctMCBmbGV4LTFcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gZ2FwLTJcIj5cbiAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtZm9yZWdyb3VuZCB0cnVuY2F0ZVwiPlxuICAgICAgICAgICAge21haWwuc2VuZGVyX25hbWUgfHwgbWFpbC5zZW5kZXJ9XG4gICAgICAgICAgPC9wPlxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtWzExcHhdIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCB3aGl0ZXNwYWNlLW5vd3JhcCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMVwiPlxuICAgICAgICAgICAgPENsb2NrIGNsYXNzTmFtZT1cImgtMyB3LTNcIiAvPlxuICAgICAgICAgICAge3RpbWVBZ28obWFpbC5tYWlsX2RhdGUpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIHRydW5jYXRlIG10LTAuNVwiPlxuICAgICAgICAgIHttYWlsLnN1YmplY3QgfHwgJyjml6DkuLvpopgpJ31cbiAgICAgICAgPC9wPlxuICAgICAgPC9kaXY+XG4gICAgICA8c3BhblxuICAgICAgICBjbGFzc05hbWU9e2B0ZXh0LVsxMHB4XSBweC0xLjUgcHktMC41IHJvdW5kZWQgZm9udC1tZWRpdW0gc2hyaW5rLTAgJHtcbiAgICAgICAgICBtYWlsLm1haWxib3ggPT09ICdJTkJPWCdcbiAgICAgICAgICAgID8gJ2JnLXByaW1hcnkvMTAgdGV4dC1wcmltYXJ5J1xuICAgICAgICAgICAgOiAnYmctYW1iZXItNTAwLzEwIHRleHQtYW1iZXItNTAwJ1xuICAgICAgICB9YH1cbiAgICAgID5cbiAgICAgICAge21haWwubWFpbGJveCA9PT0gJ0lOQk9YJyA/ICfmlLbku7bnrrEnIDogJ+Weg+WcvueusSd9XG4gICAgICA8L3NwYW4+XG4gICAgPC9tb3Rpb24uZGl2PlxuICApO1xufVxuXG5mdW5jdGlvbiBFbXB0eVN0YXRlKCkge1xuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcHktMTAgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+XG4gICAgICA8TWFpbCBjbGFzc05hbWU9XCJoLTEwIHctMTAgbWItMiBvcGFjaXR5LTMwXCIgLz5cbiAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc21cIj7mmoLml6Dpgq7ku7bmlbDmja48L3A+XG4gICAgPC9kaXY+XG4gICk7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBSZWNlbnRNYWlscyh7IG1haWxzIH06IHsgbWFpbHM6IE1haWxNZXNzYWdlW10gfSkge1xuICBjb25zdCBpbmJveENvdW50ID0gbWFpbHMuZmlsdGVyKChtKSA9PiBtLm1haWxib3ggPT09ICdJTkJPWCcpLmxlbmd0aDtcbiAgY29uc3QganVua0NvdW50ID0gbWFpbHMuZmlsdGVyKChtKSA9PiBtLm1haWxib3ggPT09ICdKdW5rJykubGVuZ3RoO1xuXG4gIHJldHVybiAoXG4gICAgPG1vdGlvbi5kaXZcbiAgICAgIGluaXRpYWw9e3sgb3BhY2l0eTogMCwgeTogMjAgfX1cbiAgICAgIGFuaW1hdGU9e3sgb3BhY2l0eTogMSwgeTogMCB9fVxuICAgICAgdHJhbnNpdGlvbj17eyBkdXJhdGlvbjogMC40LCBkZWxheTogMC4zNSB9fVxuICAgICAgY2xhc3NOYW1lPVwiZ2xhc3MtY2FyZCBmbGV4IGZsZXgtY29sXCJcbiAgICA+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBweC01IHB5LTQgYm9yZGVyLWIgYm9yZGVyLWJvcmRlclwiPlxuICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtZm9yZWdyb3VuZCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxuICAgICAgICAgIDxNYWlsIGNsYXNzTmFtZT1cImgtNCB3LTQgdGV4dC1wcmltYXJ5XCIgLz5cbiAgICAgICAgICDmnIDov5Hpgq7ku7ZcbiAgICAgICAgPC9oMj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyB0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0xXCI+XG4gICAgICAgICAgICA8SW5ib3ggY2xhc3NOYW1lPVwiaC0zIHctMyB0ZXh0LXByaW1hcnlcIiAvPiB7aW5ib3hDb3VudH1cbiAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cbiAgICAgICAgICAgIDxBbGVydFRyaWFuZ2xlIGNsYXNzTmFtZT1cImgtMyB3LTMgdGV4dC1hbWJlci01MDBcIiAvPiB7anVua0NvdW50fVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG92ZXJmbG93LXktYXV0byBtYXgtaC1bMzYwcHhdIHAtMlwiPlxuICAgICAgICB7bWFpbHMubGVuZ3RoID4gMCA/IChcbiAgICAgICAgICBtYWlscy5tYXAoKG1haWwsIGkpID0+IDxNYWlsSXRlbSBrZXk9e21haWwuaWR9IG1haWw9e21haWx9IGluZGV4PXtpfSAvPilcbiAgICAgICAgKSA6IChcbiAgICAgICAgICA8RW1wdHlTdGF0ZSAvPlxuICAgICAgICApfVxuICAgICAgPC9kaXY+XG4gICAgPC9tb3Rpb24uZGl2PlxuICApO1xufVxuIl0sImZpbGUiOiJDOi9Vc2Vycy8xL0Rlc2t0b3AvbXVzZS9NdXNlL3dlYi9zcmMvY29tcG9uZW50cy9kYXNoYm9hcmQvUmVjZW50TWFpbHMudHN4In0=

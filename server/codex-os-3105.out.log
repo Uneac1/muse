@@ -1,0 +1,20 @@
+
+> muse-mail-server@1.0.0 start
+> npx tsx src/server.ts
+
+[13:10:39] [32minfo[39m: Database migrations completed
+[13:10:39] [32minfo[39m: Server is running on http://localhost:3105
+[13:11:12] [32minfo[39m: POST /api/os/rules 200 - 53ms
+[13:11:12] [32minfo[39m: POST /api/os/memory 200 - 7ms
+[13:11:12] [32minfo[39m: POST /api/os/rules 200 - 2ms
+[13:11:27] [32minfo[39m: GET /api/os/memory 200 - 1ms
+[13:11:27] [32minfo[39m: DELETE /api/os/memory/6 200 - 1ms
+[13:11:27] [32minfo[39m: GET /api/os/rules 200 - 1ms
+[13:11:27] [32minfo[39m: DELETE /api/os/rules/6 200 - 0ms
+[13:11:54] [32minfo[39m: POST /api/os/rules 200 - 1ms
+[13:11:54] [32minfo[39m: POST /api/os/memory 200 - 1ms
+[13:11:54] [32minfo[39m: POST /api/os/rules 200 - 1ms
+[13:11:54] [32minfo[39m: DELETE /api/os/memory/7 200 - 0ms
+[13:11:54] [32minfo[39m: DELETE /api/os/rules/7 200 - 0ms
+[13:11:58] [32minfo[39m: GET /api/os/workspace 200 - 3578ms
+[13:11:58] [32minfo[39m: GET /api/os/search?q=github 200 - 2ms

@@ -1,0 +1,246 @@
+
+> muse-mail-server@1.0.0 start
+> npx tsx src/server.ts
+
+[13:59:34] [32minfo[39m: Database migrations completed
+[13:59:34] [32minfo[39m: Server is running on http://localhost:3000
+[13:59:35] [32minfo[39m: GET /api/integrations/misub 200 - 34ms
+[13:59:35] [32minfo[39m: GET /api/integrations/ymail 200 - 10ms
+[13:59:35] [32minfo[39m: GET /api/integrations/cloudflare 200 - 5ms
+[13:59:35] [32minfo[39m: GET /api/integrations/github 200 - 5ms
+[13:59:35] [32minfo[39m: GET /api/integrations/ymail/addresses/3/mails?limit=20&offset=0 200 - 6ms
+[13:59:49] [32minfo[39m: GET /api/integrations/misub 200 - 0ms
+[13:59:49] [32minfo[39m: GET /api/integrations/ymail 200 - 1ms
+[13:59:49] [32minfo[39m: GET /api/integrations/cloudflare 200 - 0ms
+[13:59:49] [32minfo[39m: GET /api/integrations/github 200 - 0ms
+[13:59:49] [32minfo[39m: GET /api/integrations/ymail/addresses/3/mails?limit=20&offset=0 200 - 1ms
+[14:00:02] [32minfo[39m: GET /api/auth/check 200 - 28ms
+[14:00:03] [32minfo[39m: GET /api/integrations/misub 200 - 1ms
+[14:00:03] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[14:00:04] [32minfo[39m: GET /api/integrations/ymail 200 - 1ms
+[14:00:06] [32minfo[39m: GET /api/integrations/ymail/addresses/3/mails?limit=20&offset=0 200 - 2129ms
+[14:00:07] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[14:00:07] [32minfo[39m: GET /api/integrations/cloudflare 200 - 1ms
+[14:00:07] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[14:00:08] [32minfo[39m: GET /api/integrations/github 200 - 1ms
+[14:03:47] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[14:03:51] [32minfo[39m: GET /api/integrations/ymail 200 - 2294ms
+[14:03:53] [32minfo[39m: GET /api/os/workspace 200 - 5154ms
+[14:03:54] [32minfo[39m: GET /api/integrations/github 200 - 1ms
+[14:03:56] [32minfo[39m: GET /api/integrations/notion 200 - 6100ms
+[14:03:57] [32minfo[39m: GET /api/integrations/notion 200 - 0ms
+[14:04:01] [32minfo[39m: GET /api/integrations/cloudflare 200 - 2782ms
+[14:04:02] [32minfo[39m: GET /api/integrations/misub 200 - 2575ms
+[14:04:03] [32minfo[39m: GET /api/proxies 200 - 1ms
+[14:04:03] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[14:04:04] [32minfo[39m: GET /api/newspaper/briefing?limit=12&refresh=false 200 - 5937ms
+[14:04:05] [32minfo[39m: GET /api/ai/accounts 200 - 1ms
+[14:04:05] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[14:04:05] [32minfo[39m: GET /api/tags 200 - 1ms
+[14:04:05] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[14:04:06] [32minfo[39m: GET /api/dashboard/stats 200 - 2ms
+[14:04:09] [32minfo[39m: GET /api/proxies 200 - 0ms
+[14:04:10] [32minfo[39m: GET /api/newspaper/briefing?limit=12&refresh=false 200 - 1ms
+[14:04:13] [32minfo[39m: GET /api/newspaper/briefing?limit=12&refresh=false 200 - 1ms
+[14:04:15] [32minfo[39m: GET /api/integrations/notion 200 - 0ms
+[14:04:45] [32minfo[39m: GET /api/integrations/notion/insights 200 - 48877ms
+[14:23:37] [32minfo[39m: GET /api/integrations/cloudflare 200 - 2009ms
+[15:56:22] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[15:56:22] [32minfo[39m: GET /api/dashboard/stats 200 - 1ms
+[15:56:25] [32minfo[39m: GET /api/os/workspace 200 - 32ms
+[15:56:38] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 2ms
+[15:56:38] [32minfo[39m: GET /api/tags 200 - 1ms
+[15:56:38] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[15:56:39] [32minfo[39m: GET /api/ai/accounts 200 - 1ms
+[15:56:41] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[15:56:45] [32minfo[39m: POST /api/tokens/sync 200 - 2596ms
+[15:56:45] [32minfo[39m: GET /api/tokens/accounts 200 - 2ms
+[15:56:48] [32minfo[39m: POST /api/oauth/openai/authorize 200 - 4ms
+[15:57:05] [32minfo[39m: POST /api/tokens/accounts 200 - 650ms
+[15:57:06] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[15:57:11] [32minfo[39m: DELETE /api/tokens/accounts/3 200 - 1ms
+[15:57:11] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[15:57:31] [32minfo[39m: DELETE /api/tokens/accounts/2 200 - 0ms
+[15:57:31] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[15:57:33] [32minfo[39m: DELETE /api/tokens/accounts/4 200 - 1ms
+[15:57:33] [32minfo[39m: GET /api/tokens/accounts 200 - 0ms
+[15:57:34] [32minfo[39m: DELETE /api/tokens/accounts/5 200 - 0ms
+[15:57:34] [32minfo[39m: GET /api/tokens/accounts 200 - 0ms
+[15:57:39] [32minfo[39m: PUT /api/tokens/accounts/6 200 - 642ms
+[15:57:39] [32minfo[39m: GET /api/tokens/accounts 200 - 0ms
+[15:57:42] [32minfo[39m: POST /api/oauth/openai/authorize 200 - 1ms
+[15:58:16] [32minfo[39m: POST /api/tokens/accounts 200 - 633ms
+[15:58:16] [32minfo[39m: GET /api/tokens/accounts 200 - 0ms
+[15:58:21] [32minfo[39m: PUT /api/tokens/accounts/6 200 - 664ms
+[15:58:21] [32minfo[39m: GET /api/tokens/accounts 200 - 2ms
+[15:58:23] [32minfo[39m: POST /api/oauth/openai/authorize 200 - 1ms
+[15:58:43] [32minfo[39m: POST /api/tokens/accounts 200 - 639ms
+[15:58:43] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[15:58:46] [32minfo[39m: POST /api/oauth/openai/authorize 200 - 0ms
+[15:59:05] [32minfo[39m: POST /api/tokens/accounts 200 - 695ms
+[15:59:05] [32minfo[39m: GET /api/tokens/accounts 200 - 0ms
+[15:59:23] [32minfo[39m: GET /api/ai/accounts 200 - 0ms
+[15:59:23] [32minfo[39m: GET /api/os/workspace 200 - 4ms
+[16:00:21] [32minfo[39m: GET /api/os/workspace 200 - 2ms
+[16:00:26] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[16:00:26] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[16:01:03] [32minfo[39m: IMAP fetched 1 mails
+[16:01:03] [32minfo[39m: POST /api/mails/recent/refresh 200 - 7120ms
+[16:01:33] [32minfo[39m: IMAP fetched 1 mails
+[16:01:33] [32minfo[39m: POST /api/mails/recent/refresh 200 - 7024ms
+[16:02:03] [32minfo[39m: IMAP fetched 1 mails
+[16:02:03] [32minfo[39m: POST /api/mails/recent/refresh 200 - 6840ms
+[16:02:12] [32minfo[39m: POST /api/accounts 200 - 1ms
+[16:02:12] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[16:02:15] [32minfo[39m: GET /api/mails/cached?account_id=2&mailbox=INBOX&pageSize=100 200 - 1ms
+[16:02:22] [32minfo[39m: GET /api/mails/cached?account_id=2&mailbox=Junk&pageSize=100 200 - 1ms
+[16:02:22] [32minfo[39m: IMAP fetched 50 mails
+[16:02:22] [32minfo[39m: POST /api/mails/fetch 200 - 5985ms
+[16:02:22] [32minfo[39m: GET /api/mails/cached?account_id=2&mailbox=INBOX&pageSize=100 200 - 4ms
+[16:02:22] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[16:02:22] [32minfo[39m: GET /api/mails/cached?account_id=2&mailbox=Junk&pageSize=100 200 - 1ms
+[16:02:23] [32minfo[39m: GET /api/mails/cached?account_id=2&mailbox=INBOX&pageSize=100 200 - 3ms
+[16:02:25] [32minfo[39m: GET /api/dashboard/stats 200 - 2ms
+[16:02:27] [32minfo[39m: GET /api/os/workspace 200 - 3ms
+[16:02:28] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[16:02:28] [32minfo[39m: GET /api/tags 200 - 1ms
+[16:02:28] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[16:03:48] [32minfo[39m: IMAP fetched 1 mails
+[16:03:56] [32minfo[39m: IMAP fetched 1 mails
+[16:03:56] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8656ms
+[16:03:59] [32minfo[39m: IMAP fetched 1 mails
+[16:04:06] [32minfo[39m: IMAP fetched 1 mails
+[16:04:06] [32minfo[39m: POST /api/mails/recent/refresh 200 - 7994ms
+[16:04:29] [32minfo[39m: IMAP fetched 1 mails
+[16:04:37] [32minfo[39m: IMAP fetched 1 mails
+[16:04:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 9095ms
+[16:04:59] [32minfo[39m: IMAP fetched 1 mails
+[16:05:06] [32minfo[39m: IMAP fetched 1 mails
+[16:05:06] [32minfo[39m: POST /api/mails/recent/refresh 200 - 7996ms
+[16:05:29] [32minfo[39m: IMAP fetched 1 mails
+[16:05:37] [32minfo[39m: IMAP fetched 1 mails
+[16:05:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 9240ms
+[16:05:59] [32minfo[39m: IMAP fetched 1 mails
+[16:06:06] [32minfo[39m: IMAP fetched 1 mails
+[16:06:06] [32minfo[39m: POST /api/mails/recent/refresh 200 - 7923ms
+[16:06:30] [32minfo[39m: IMAP fetched 1 mails
+[16:06:36] [32minfo[39m: IMAP fetched 1 mails
+[16:06:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8007ms
+[16:07:00] [32minfo[39m: IMAP fetched 1 mails
+[16:07:07] [32minfo[39m: IMAP fetched 1 mails
+[16:07:07] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8164ms
+[16:07:30] [32minfo[39m: IMAP fetched 1 mails
+[16:07:38] [32minfo[39m: IMAP fetched 1 mails
+[16:07:38] [32minfo[39m: POST /api/mails/recent/refresh 200 - 9108ms
+[16:08:00] [32minfo[39m: IMAP fetched 1 mails
+[16:08:08] [32minfo[39m: IMAP fetched 1 mails
+[16:08:08] [32minfo[39m: POST /api/mails/recent/refresh 200 - 9947ms
+[16:08:30] [32minfo[39m: IMAP fetched 1 mails
+[16:08:37] [32minfo[39m: IMAP fetched 1 mails
+[16:08:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8718ms
+[16:09:30] [32minfo[39m: IMAP fetched 1 mails
+[16:09:37] [32minfo[39m: IMAP fetched 1 mails
+[16:09:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 7383ms
+[16:10:32] [32minfo[39m: IMAP fetched 1 mails
+[16:10:39] [32minfo[39m: IMAP fetched 1 mails
+[16:10:39] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8300ms
+[16:10:59] [32minfo[39m: IMAP fetched 1 mails
+[16:11:07] [32minfo[39m: IMAP fetched 1 mails
+[16:11:07] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8620ms
+[16:11:30] [32minfo[39m: IMAP fetched 1 mails
+[16:11:37] [32minfo[39m: IMAP fetched 1 mails
+[16:11:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8149ms
+[16:11:59] [32minfo[39m: IMAP fetched 1 mails
+[16:12:06] [32minfo[39m: IMAP fetched 1 mails
+[16:12:06] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8163ms
+[16:12:30] [32minfo[39m: IMAP fetched 1 mails
+[16:12:35] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[16:12:37] [32minfo[39m: IMAP fetched 1 mails
+[16:12:37] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8347ms
+[16:12:40] [32minfo[39m: GET /api/proxies 200 - 1ms
+[16:12:42] [32minfo[39m: PUT /api/proxies/6/enabled 200 - 0ms
+[16:12:42] [32minfo[39m: GET /api/proxies 200 - 1ms
+[16:12:42] [32minfo[39m: Proxy test success: 127.0.0.1:10808 -> 103.190.178.20 (1192ms)
+[16:12:42] [32minfo[39m: POST /api/proxies/6/test 200 - 1196ms
+[16:12:42] [32minfo[39m: GET /api/proxies 200 - 1ms
+[16:12:44] [32minfo[39m: POST /api/tokens/sync 200 - 7007ms
+[16:12:44] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[16:12:46] [32minfo[39m: GET /api/integrations/misub 200 - 2801ms
+[16:36:39] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:36:45] [32minfo[39m: GET /api/integrations/misub 200 - 4395ms
+[16:40:11] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:42:30] [32minfo[39m: GET /api/os/workspace 200 - 31ms
+[16:42:38] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 2ms
+[16:42:38] [32minfo[39m: GET /api/tags 200 - 0ms
+[16:42:38] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[16:42:47] [32minfo[39m: POST /api/oauth/google/authorize 200 - 0ms
+[16:43:10] [32minfo[39m: IMAP fetched 1 mails
+[16:43:17] [32minfo[39m: IMAP fetched 1 mails
+[16:43:17] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8828ms
+[16:43:40] [32minfo[39m: IMAP fetched 1 mails
+[16:43:48] [32minfo[39m: IMAP fetched 1 mails
+[16:43:48] [32minfo[39m: POST /api/mails/recent/refresh 200 - 9799ms
+[16:44:10] [32minfo[39m: IMAP fetched 1 mails
+[16:44:17] [32minfo[39m: IMAP fetched 1 mails
+[16:44:17] [32minfo[39m: POST /api/mails/recent/refresh 200 - 8628ms
+[16:44:37] [32minfo[39m: GET /api/proxies 200 - 0ms
+[16:44:37] [32minfo[39m: GET /api/proxy-kernel 404 - 5ms
+[16:44:40] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:44:40] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:44:41] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:44:42] [32minfo[39m: GET /api/dashboard/stats 200 - 2ms
+[16:44:43] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:44:44] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:44:45] [32minfo[39m: GET /api/integrations/misub 200 - 2662ms
+[16:46:17] [32minfo[39m: GET /api/dashboard/stats 200 - 1ms
+[16:46:18] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[16:46:19] [32minfo[39m: GET /api/proxies 200 - 1ms
+[16:46:19] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:46:22] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:46:22] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:46:23] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:46:28] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:46:30] [32minfo[39m: GET /api/proxy-kernel 404 - 2ms
+[16:46:30] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:46:47] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[16:46:48] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:46:53] [32minfo[39m: GET / 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/index-BL0cO8Jb.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/index-B82Kk-e1.css 200 - 2ms
+[16:46:53] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[16:46:53] [32minfo[39m: GET /assets/Today-BK1BhBzD.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/ActionItemCard-DSerPN9a.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/useOsWorkspace-Ct3i_Tqi.js 200 - 5ms
+[16:46:53] [32minfo[39m: GET /assets/refresh-cw-DpGLzqEf.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/triangle-alert-fpblKZI_.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/sparkles-D2OMPLPY.js 200 - 5ms
+[16:46:53] [32minfo[39m: GET /assets/Inbox-BH7vj4JV.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/Dashboard-DfhDpxJM.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/proxy-DIgwrswo.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/database-CBRA2McF.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/shield-check-BB_Kgn2_.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/activity-rj2SBxfD.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/Accounts-CHti3_xG.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/trash-2-B8Xp_NR8.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/AiStudio-gid9q6NS.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/key-round-CnaJdyJA.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/circle-plus-Dm9dASRu.js 200 - 1ms
+[16:46:53] [32minfo[39m: GET /assets/SubscriptionManager-BWbaLGIY.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/integrationCache-D6y7dZZN.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/copy-DC5tH9hy.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/external-link-DDqgxQD4.js 200 - 4ms
+[16:46:53] [32minfo[39m: GET /assets/lock-mltEgWCS.js 200 - 5ms
+[16:46:53] [32minfo[39m: GET /assets/waypoints-BsmXE_3r.js 200 - 5ms
+[16:46:53] [32minfo[39m: GET /assets/layers-DQ27jqvO.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/save-C8vbEG29.js 200 - 1ms
+[16:46:53] [32minfo[39m: GET /assets/CloudflareManager-hsO2eTuD.js 200 - 2ms
+[16:46:53] [32minfo[39m: GET /assets/unplug-DJZDzh0n.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/GitHubManager-BYGnBQY1.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/YmailManager-mDwgrY3N.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /assets/ProxySettings-Cjoc3iTV.js 200 - 3ms
+[16:46:53] [32minfo[39m: GET /api/os/workspace 200 - 4ms
+[16:46:54] [32minfo[39m: GET /assets/TokenAnalytics-CjxAlpXT.js 200 - 1ms
+[16:46:54] [32minfo[39m: GET /api/proxies 200 - 1ms
+[16:46:54] [32minfo[39m: GET /api/proxy-kernel 404 - 1ms
+[16:46:56] [32minfo[39m: GET /api/proxies 200 - 0ms
+[16:46:56] [32minfo[39m: GET /api/proxy-kernel 404 - 2ms

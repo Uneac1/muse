@@ -1,0 +1,1 @@
+{"version":3,"file":"IntegrationToken.d.ts","sourceRoot":"","sources":["../../src/models/IntegrationToken.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,mBAAmB,EAAE,sBAAsB,EAAE,MAAM,UAAU,CAAC;AAEvE,qBAAa,qBAAqB;IAChC,GAAG,CAAC,QAAQ,EAAE,mBAAmB,GAAG,sBAAsB,GAAG,SAAS;IAItE,MAAM,CAAC,QAAQ,EAAE,mBAAmB,EAAE,KAAK,EAAE,MAAM,GAAG,sBAAsB;IAY5E,MAAM,CAAC,QAAQ,EAAE,mBAAmB,GAAG,OAAO;CAG/C"}

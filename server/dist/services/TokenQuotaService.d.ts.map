@@ -1,0 +1,1 @@
+{"version":3,"file":"TokenQuotaService.d.ts","sourceRoot":"","sources":["../../src/services/TokenQuotaService.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EACV,YAAY,EACZ,sBAAsB,EACtB,aAAa,EAKd,MAAM,UAAU,CAAC;AAuNlB,qBAAa,iBAAiB;IAC5B,sBAAsB,CAAC,QAAQ,EAAE,aAAa;IAI9C,mBAAmB;IAIb,WAAW,CAAC,OAAO,EAAE,YAAY,GAAG,OAAO,CAAC,sBAAsB,CAAC;CAuG1E"}

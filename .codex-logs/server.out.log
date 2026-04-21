@@ -1,0 +1,142 @@
+
+> muse-mail-server@1.0.0 start
+> npx tsx src/server.ts
+
+[11:20:56] [32minfo[39m: Database migrations completed
+[11:20:56] [32minfo[39m: Server is running on http://localhost:3000
+[11:21:25] [32minfo[39m: GET /api/os/workspace 200 - 3697ms
+[11:21:25] [32minfo[39m: GET /api/os/search?q=github 200 - 3789ms
+[11:21:42] [32minfo[39m: GET /api/auth/check 200 - 22ms
+[11:21:42] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:21:43] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[11:21:43] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[11:22:10] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:22:10] [32minfo[39m: GET /api/os/search? 200 - 3ms
+[11:22:10] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[11:22:10] [32minfo[39m: GET /api/os/search?q=github 200 - 1ms
+[11:22:28] [32minfo[39m: POST /api/os/memory 200 - 2ms
+[11:22:28] [32minfo[39m: DELETE /api/os/memory/3 200 - 1ms
+[11:22:28] [32minfo[39m: POST /api/os/rules 200 - 2ms
+[11:22:28] [32minfo[39m: DELETE /api/os/rules/4 200 - 0ms
+[11:22:55] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[11:22:55] [32minfo[39m: GET /api/os/search? 200 - 3ms
+[11:22:55] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:22:55] [32minfo[39m: GET /api/os/search?q=github 200 - 1ms
+[11:33:07] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:33:08] [32minfo[39m: GET /api/os/workspace 200 - 3ms
+[11:33:10] [32minfo[39m: GET /api/dashboard/stats 200 - 3ms
+[11:33:11] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[11:33:25] [32minfo[39m: POST /api/tokens/sync 200 - 8148ms
+[11:33:25] [32minfo[39m: GET /api/tokens/accounts 200 - 2ms
+[11:33:36] [32minfo[39m: POST /api/tokens/accounts/3/sync 200 - 532ms
+[11:33:38] [32minfo[39m: POST /api/tokens/accounts/3/sync 200 - 522ms
+[11:33:42] [32minfo[39m: POST /api/oauth/openai/authorize 200 - 3ms
+[11:34:47] [32minfo[39m: POST /api/tokens/sync 200 - 9382ms
+[11:34:47] [32minfo[39m: GET /api/tokens/accounts 200 - 2ms
+[11:35:45] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:35:46] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[11:35:49] [32minfo[39m: POST /api/oauth/openai/authorize 200 - 1ms
+[11:36:07] [32minfo[39m: PUT /api/tokens/accounts/3 200 - 689ms
+[11:36:07] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[11:36:14] [32minfo[39m: POST /api/tokens/accounts/3/sync 200 - 2725ms
+[11:36:14] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[11:36:22] [32minfo[39m: GET /api/ai/accounts 200 - 1ms
+[11:36:23] [32minfo[39m: GET /api/tokens/accounts 200 - 1ms
+[11:36:24] [32minfo[39m: GET /api/os/workspace 200 - 4ms
+[11:36:25] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:27] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:35] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:36] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:39] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:44] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:52] [32minfo[39m: GET /api/dashboard/stats 200 - 1ms
+[11:36:55] [32minfo[39m: GET /api/os/workspace 200 - 17ms
+[11:36:55] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:56] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[11:36:57] [32minfo[39m: GET /api/integrations/misub 200 - 3121ms
+[11:36:59] [32minfo[39m: GET /api/integrations/notion 200 - 5263ms
+[11:37:52] [32minfo[39m: GET /api/integrations/notion/insights 200 - 53454ms
+[11:43:32] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:43:32] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:43:34] [32minfo[39m: GET /api/os/workspace 200 - 4ms
+[11:44:00] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[11:44:01] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[11:44:36] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[11:44:39] [32minfo[39m: GET /api/os/workspace 200 - 2ms
+[11:44:39] [32minfo[39m: GET /api/os/search?q=github 200 - 0ms
+[11:44:53] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[11:44:53] [32minfo[39m: POST /api/os/memory 200 - 2ms
+[11:44:53] [31merror[39m: [500] POST /api/os/rules - CHECK constraint failed: trigger_type IN (
+        'token_low_remaining_pct',
+        'account_error',
+        'proxy_failed',
+        'keyword_in_news',
+        'github_repo_activity',
+        'subscription_expiring_days'
+      )
+[11:45:05] [32minfo[39m: GET /api/os/memory 200 - 1ms
+[11:45:05] [32minfo[39m: DELETE /api/os/memory/4 200 - 0ms
+[11:46:52] [31merror[39m: [500] POST /api/os/rules - CHECK constraint failed: trigger_type IN (
+        'token_low_remaining_pct',
+        'account_error',
+        'proxy_failed',
+        'keyword_in_news',
+        'github_repo_activity',
+        'subscription_expiring_days'
+      )
+[11:46:52] [32minfo[39m: POST /api/os/memory 200 - 1ms
+[11:46:52] [32minfo[39m: POST /api/os/rules 200 - 1ms
+[11:46:52] [32minfo[39m: DELETE /api/os/memory/5 200 - 1ms
+[11:46:52] [32minfo[39m: DELETE /api/os/rules/5 200 - 1ms
+[11:46:52] [32minfo[39m: GET /api/os/workspace 200 - 2ms
+[13:10:32] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:10:33] [32minfo[39m: GET /api/os/workspace 200 - 26ms
+[13:11:06] [32minfo[39m: POST /api/os/actions/state 404 - 2ms
+[13:11:06] [32minfo[39m: POST /api/os/actions/state 404 - 1ms
+[13:11:07] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:11:07] [32minfo[39m: GET /api/os/workspace 200 - 3ms
+[13:11:08] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:11:09] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:11:09] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:11:10] [32minfo[39m: GET /api/dashboard/stats 200 - 2ms
+[13:11:10] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:11:10] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[13:11:10] [32minfo[39m: GET /api/tags 200 - 0ms
+[13:11:10] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[13:11:11] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:11:12] [32minfo[39m: GET /api/ai/accounts 200 - 1ms
+[13:11:12] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:11:12] [32minfo[39m: GET /api/proxies 200 - 1ms
+[13:11:13] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:11:30] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:12:10] [32minfo[39m: GET /api/os/workspace 200 - 2ms
+[13:12:25] [32minfo[39m: POST /api/os/actions/state 404 - 0ms
+[13:12:25] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[13:12:32] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:12:32] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[13:12:33] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:12:33] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:12:34] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:12:34] [32minfo[39m: GET /api/dashboard/stats 200 - 1ms
+[13:12:35] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:12:35] [32minfo[39m: GET /api/accounts?page=1&pageSize=20 200 - 1ms
+[13:12:35] [32minfo[39m: GET /api/tags 200 - 0ms
+[13:12:35] [32minfo[39m: GET /api/mails/recent?limit=5 200 - 1ms
+[13:12:36] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:12:36] [32minfo[39m: GET /api/ai/accounts 200 - 1ms
+[13:12:37] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:12:37] [32minfo[39m: GET /api/proxies 200 - 1ms
+[13:12:38] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:12:39] [32minfo[39m: GET /api/os/workspace 200 - 1ms
+[13:12:42] [32minfo[39m: POST /api/os/actions/state 404 - 0ms
+[13:13:48] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:13:49] [32minfo[39m: GET /api/os/workspace 200 - 3ms
+[13:13:49] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:13:50] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:13:50] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:13:51] [32minfo[39m: GET /api/auth/check 200 - 1ms
+[13:13:51] [32minfo[39m: GET /api/auth/check 200 - 0ms
+[13:13:51] [32minfo[39m: GET /api/os/search? 200 - 1ms
+[13:13:51] [32minfo[39m: GET /api/os/search?q=github 200 - 0ms
+[13:14:11] [32minfo[39m: GET /api/os/workspace 200 - 0ms
+[13:14:48] [32minfo[39m: POST /api/os/actions/state 404 - 1ms

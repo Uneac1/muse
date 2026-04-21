@@ -1,0 +1,1 @@
+import{b as n,w as i}from"./index-BL0cO8Jb.js";const r=300*1e3;function s(t,a=r){return n(t,a)}function c(t,a){i(t,a)}function u(t){return!t}function h(t,a=r){const e=n(t,a);return!!e.value&&!e.isStale}export{h as i,s as r,u as s,c as w};

@@ -1,0 +1,37 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const koa_router_1 = __importDefault(require("koa-router"));
+const accounts_1 = require("./accounts");
+const mails_1 = require("./mails");
+const proxies_1 = require("./proxies");
+const dashboard_1 = require("./dashboard");
+const auth_1 = require("./auth");
+const tags_1 = require("./tags");
+const backup_1 = require("./backup");
+const oauth_1 = require("./oauth");
+const integrations_1 = require("./integrations");
+const ai_1 = require("./ai");
+const tokens_1 = require("./tokens");
+const newspaper_1 = require("./newspaper");
+const os_1 = require("./os");
+const proxy_kernel_1 = require("./proxy-kernel");
+const router = new koa_router_1.default({ prefix: '/api' });
+router.use('/accounts', accounts_1.accountRoutes.routes(), accounts_1.accountRoutes.allowedMethods());
+router.use('/mails', mails_1.mailRoutes.routes(), mails_1.mailRoutes.allowedMethods());
+router.use('/proxies', proxies_1.proxyRoutes.routes(), proxies_1.proxyRoutes.allowedMethods());
+router.use('/dashboard', dashboard_1.dashboardRoutes.routes(), dashboard_1.dashboardRoutes.allowedMethods());
+router.use('/auth', auth_1.authRoutes.routes(), auth_1.authRoutes.allowedMethods());
+router.use('/tags', tags_1.tagRoutes.routes(), tags_1.tagRoutes.allowedMethods());
+router.use('/backup', backup_1.backupRoutes.routes(), backup_1.backupRoutes.allowedMethods());
+router.use('/oauth', oauth_1.oauthRoutes.routes(), oauth_1.oauthRoutes.allowedMethods());
+router.use('/integrations', integrations_1.integrationRoutes.routes(), integrations_1.integrationRoutes.allowedMethods());
+router.use('/ai', ai_1.aiRoutes.routes(), ai_1.aiRoutes.allowedMethods());
+router.use('/tokens', tokens_1.tokenRoutes.routes(), tokens_1.tokenRoutes.allowedMethods());
+router.use('/newspaper', newspaper_1.newspaperRoutes.routes(), newspaper_1.newspaperRoutes.allowedMethods());
+router.use('/os', os_1.osRoutes.routes(), os_1.osRoutes.allowedMethods());
+router.use('/proxy-kernel', proxy_kernel_1.proxyKernelRoutes.routes(), proxy_kernel_1.proxyKernelRoutes.allowedMethods());
+exports.default = router;
+//# sourceMappingURL=index.js.map

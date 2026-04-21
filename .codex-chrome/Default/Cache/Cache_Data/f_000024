@@ -1,0 +1,295 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/proxy/ProxyForm.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=412b9a55"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=412b9a55"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+const initialForm = { name: "", type: "socks5", host: "", port: 1080, username: "", password: "", is_default: false };
+export default function ProxyForm({ open, proxy, onClose, onSave }) {
+  _s();
+  const [form, setForm] = useState(initialForm);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (proxy) {
+      setForm({
+        name: proxy.name,
+        type: proxy.type,
+        host: proxy.host,
+        port: proxy.port,
+        username: proxy.username || "",
+        password: proxy.password || "",
+        is_default: proxy.is_default
+      });
+    } else {
+      setForm(initialForm);
+    }
+  }, [proxy, open]);
+  if (!open) return null;
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(form);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+  const inputCls = "w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const labelCls = "block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1";
+  return /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50", onClick: onClose, children: /* @__PURE__ */ jsxDEV("div", { className: "bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6", onClick: (e) => e.stopPropagation(), children: [
+    /* @__PURE__ */ jsxDEV("h2", { className: "text-lg font-semibold mb-4 text-zinc-900 dark:text-zinc-100", children: proxy ? "编辑代理" : "添加代理" }, void 0, false, {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+      lineNumber: 70,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "space-y-3", children: [
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("label", { className: labelCls, children: "名称" }, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 75,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("input", { type: "text", value: form.name, onChange: (e) => setForm((f) => ({ ...f, name: e.target.value })), className: inputCls, placeholder: "我的代理" }, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 76,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 74,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("label", { className: labelCls, children: "类型" }, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 79,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex gap-4 mt-1", children: ["socks5", "http"].map(
+          (t) => /* @__PURE__ */ jsxDEV("label", { className: "inline-flex items-center gap-2 cursor-pointer", children: [
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "radio",
+                name: "proxyType",
+                checked: form.type === t,
+                onChange: () => setForm((f) => ({ ...f, type: t })),
+                className: "accent-blue-600"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+                lineNumber: 83,
+                columnNumber: 19
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV("span", { className: "text-sm text-zinc-700 dark:text-zinc-300 uppercase", children: t }, void 0, false, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+              lineNumber: 90,
+              columnNumber: 19
+            }, this)
+          ] }, t, true, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 82,
+            columnNumber: 15
+          }, this)
+        ) }, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 80,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 78,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-3 gap-3", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "col-span-2", children: [
+          /* @__PURE__ */ jsxDEV("label", { className: labelCls, children: "主机" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 97,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("input", { type: "text", value: form.host, onChange: (e) => setForm((f) => ({ ...f, host: e.target.value })), className: inputCls, placeholder: "127.0.0.1" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 98,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 96,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: labelCls, children: "端口" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 101,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("input", { type: "number", value: form.port, onChange: (e) => setForm((f) => ({ ...f, port: Number(e.target.value) })), className: inputCls, placeholder: "1080" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 102,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 100,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 95,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: labelCls, children: [
+            "用户名 ",
+            /* @__PURE__ */ jsxDEV("span", { className: "text-zinc-400 font-normal", children: "(可选)" }, void 0, false, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+              lineNumber: 107,
+              columnNumber: 47
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 107,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("input", { type: "text", value: form.username, onChange: (e) => setForm((f) => ({ ...f, username: e.target.value })), className: inputCls, placeholder: "用户名" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 108,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 106,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: labelCls, children: [
+            "密码 ",
+            /* @__PURE__ */ jsxDEV("span", { className: "text-zinc-400 font-normal", children: "(可选)" }, void 0, false, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+              lineNumber: 111,
+              columnNumber: 46
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 111,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("input", { type: "password", value: form.password, onChange: (e) => setForm((f) => ({ ...f, password: e.target.value })), className: inputCls, placeholder: "密码" }, void 0, false, {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 112,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 110,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 105,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("label", { className: "inline-flex items-center gap-2 cursor-pointer mt-1", children: [
+        /* @__PURE__ */ jsxDEV(
+          "div",
+          {
+            role: "switch",
+            "aria-checked": form.is_default,
+            tabIndex: 0,
+            onClick: () => setForm((f) => ({ ...f, is_default: !f.is_default })),
+            onKeyDown: (e) => e.key === "Enter" && setForm((f) => ({ ...f, is_default: !f.is_default })),
+            className: `relative w-9 h-5 rounded-full transition-colors ${form.is_default ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-600"}`,
+            children: /* @__PURE__ */ jsxDEV("span", { className: `absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.is_default ? "translate-x-4" : ""}` }, void 0, false, {
+              fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+              lineNumber: 124,
+              columnNumber: 15
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+            lineNumber: 116,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-sm text-zinc-700 dark:text-zinc-300", children: "设为默认代理" }, void 0, false, {
+          fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+          lineNumber: 126,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 115,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+      lineNumber: 73,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "flex justify-end gap-2 mt-5", children: [
+      /* @__PURE__ */ jsxDEV("button", { onClick: onClose, className: "px-4 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors", children: "取消" }, void 0, false, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 130,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("button", { onClick: handleSave, disabled: saving || !form.name || !form.host || !form.port, className: "px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors", children: saving ? "保存中..." : "保存" }, void 0, false, {
+        fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+        lineNumber: 133,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+      lineNumber: 129,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+    lineNumber: 69,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx",
+    lineNumber: 68,
+    columnNumber: 5
+  }, this);
+}
+_s(ProxyForm, "cDL56+SRPuH6SHG2JLp5s4OTZaM=");
+_c = ProxyForm;
+var _c;
+$RefreshReg$(_c, "ProxyForm");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/1/Desktop/muse/Muse/web/src/components/proxy/ProxyForm.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QSxJQUFBIiwibmFtZXMiOlsidXNlU3RhdGUiLCJ1c2VFZmZlY3QiLCJpbml0aWFsRm9ybSIsIm5hbWUiLCJ0eXBlIiwiaG9zdCIsInBvcnQiLCJ1c2VybmFtZSIsInBhc3N3b3JkIiwiaXNfZGVmYXVsdCIsIlByb3h5Rm9ybSIsIm9wZW4iLCJwcm94eSIsIm9uQ2xvc2UiLCJvblNhdmUiLCJfcyIsImZvcm0iLCJzZXRGb3JtIiwic2F2aW5nIiwic2V0U2F2aW5nIiwiaGFuZGxlU2F2ZSIsImlucHV0Q2xzIiwibGFiZWxDbHMiLCJlIiwic3RvcFByb3BhZ2F0aW9uIiwiZiIsInRhcmdldCIsInZhbHVlIiwibWFwIiwidCIsIk51bWJlciIsImtleSIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlByb3h5Rm9ybS50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUsIHVzZUVmZmVjdCB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB0eXBlIHsgUHJveHkgfSBmcm9tICcuLi8uLi90eXBlcyc7XG5cbmludGVyZmFjZSBQcm9wcyB7XG4gIG9wZW46IGJvb2xlYW47XG4gIHByb3h5OiBQcm94eSB8IG51bGw7XG4gIG9uQ2xvc2U6ICgpID0+IHZvaWQ7XG4gIG9uU2F2ZTogKGRhdGE6IFBhcnRpYWw8UHJveHk+KSA9PiBQcm9taXNlPHZvaWQ+O1xufVxuXG5jb25zdCBpbml0aWFsRm9ybSA9IHsgbmFtZTogJycsIHR5cGU6ICdzb2NrczUnIGFzICdzb2NrczUnIHwgJ2h0dHAnLCBob3N0OiAnJywgcG9ydDogMTA4MCwgdXNlcm5hbWU6ICcnLCBwYXNzd29yZDogJycsIGlzX2RlZmF1bHQ6IGZhbHNlIH07XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIFByb3h5Rm9ybSh7IG9wZW4sIHByb3h5LCBvbkNsb3NlLCBvblNhdmUgfTogUHJvcHMpIHtcbiAgY29uc3QgW2Zvcm0sIHNldEZvcm1dID0gdXNlU3RhdGUoaW5pdGlhbEZvcm0pO1xuICBjb25zdCBbc2F2aW5nLCBzZXRTYXZpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xuXG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgaWYgKHByb3h5KSB7XG4gICAgICBzZXRGb3JtKHtcbiAgICAgICAgbmFtZTogcHJveHkubmFtZSxcbiAgICAgICAgdHlwZTogcHJveHkudHlwZSxcbiAgICAgICAgaG9zdDogcHJveHkuaG9zdCxcbiAgICAgICAgcG9ydDogcHJveHkucG9ydCxcbiAgICAgICAgdXNlcm5hbWU6IHByb3h5LnVzZXJuYW1lIHx8ICcnLFxuICAgICAgICBwYXNzd29yZDogcHJveHkucGFzc3dvcmQgfHwgJycsXG4gICAgICAgIGlzX2RlZmF1bHQ6IHByb3h5LmlzX2RlZmF1bHQsXG4gICAgICB9KTtcbiAgICB9IGVsc2Uge1xuICAgICAgc2V0Rm9ybShpbml0aWFsRm9ybSk7XG4gICAgfVxuICB9LCBbcHJveHksIG9wZW5dKTtcblxuICBpZiAoIW9wZW4pIHJldHVybiBudWxsO1xuXG4gIGNvbnN0IGhhbmRsZVNhdmUgPSBhc3luYyAoKSA9PiB7XG4gICAgc2V0U2F2aW5nKHRydWUpO1xuICAgIHRyeSB7XG4gICAgICBhd2FpdCBvblNhdmUoZm9ybSk7XG4gICAgICBvbkNsb3NlKCk7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldFNhdmluZyhmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGlucHV0Q2xzID0gJ3ctZnVsbCBweC0zIHB5LTIgcm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLXppbmMtMzAwIGRhcms6Ym9yZGVyLXppbmMtNjAwIGJnLXdoaXRlIGRhcms6YmctemluYy04MDAgdGV4dC16aW5jLTkwMCBkYXJrOnRleHQtemluYy0xMDAgdGV4dC1zbSBmb2N1czpvdXRsaW5lLW5vbmUgZm9jdXM6cmluZy0yIGZvY3VzOnJpbmctYmx1ZS01MDAnO1xuICBjb25zdCBsYWJlbENscyA9ICdibG9jayB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtemluYy03MDAgZGFyazp0ZXh0LXppbmMtMzAwIG1iLTEnO1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJmaXhlZCBpbnNldC0wIHotNTAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgYmctYmxhY2svNTBcIiBvbkNsaWNrPXtvbkNsb3NlfT5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgZGFyazpiZy16aW5jLTkwMCByb3VuZGVkLXhsIHNoYWRvdy0yeGwgdy1mdWxsIG1heC13LWxnIG14LTQgcC02XCIgb25DbGljaz17ZSA9PiBlLnN0b3BQcm9wYWdhdGlvbigpfT5cbiAgICAgICAgPGgyIGNsYXNzTmFtZT1cInRleHQtbGcgZm9udC1zZW1pYm9sZCBtYi00IHRleHQtemluYy05MDAgZGFyazp0ZXh0LXppbmMtMTAwXCI+XG4gICAgICAgICAge3Byb3h5ID8gJ+e8lui+keS7o+eQhicgOiAn5re75Yqg5Luj55CGJ31cbiAgICAgICAgPC9oMj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTNcIj5cbiAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT17bGFiZWxDbHN9PuWQjeensDwvbGFiZWw+XG4gICAgICAgICAgICA8aW5wdXQgdHlwZT1cInRleHRcIiB2YWx1ZT17Zm9ybS5uYW1lfSBvbkNoYW5nZT17ZSA9PiBzZXRGb3JtKGYgPT4gKHsgLi4uZiwgbmFtZTogZS50YXJnZXQudmFsdWUgfSkpfSBjbGFzc05hbWU9e2lucHV0Q2xzfSBwbGFjZWhvbGRlcj1cIuaIkeeahOS7o+eQhlwiIC8+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9e2xhYmVsQ2xzfT7nsbvlnos8L2xhYmVsPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC00IG10LTFcIj5cbiAgICAgICAgICAgICAgeyhbJ3NvY2tzNScsICdodHRwJ10gYXMgY29uc3QpLm1hcCh0ID0+IChcbiAgICAgICAgICAgICAgICA8bGFiZWwga2V5PXt0fSBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgY3Vyc29yLXBvaW50ZXJcIj5cbiAgICAgICAgICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgICAgICAgICB0eXBlPVwicmFkaW9cIlxuICAgICAgICAgICAgICAgICAgICBuYW1lPVwicHJveHlUeXBlXCJcbiAgICAgICAgICAgICAgICAgICAgY2hlY2tlZD17Zm9ybS50eXBlID09PSB0fVxuICAgICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KCkgPT4gc2V0Rm9ybShmID0+ICh7IC4uLmYsIHR5cGU6IHQgfSkpfVxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJhY2NlbnQtYmx1ZS02MDBcIlxuICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC16aW5jLTcwMCBkYXJrOnRleHQtemluYy0zMDAgdXBwZXJjYXNlXCI+e3R9PC9zcGFuPlxuICAgICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdyaWQtY29scy0zIGdhcC0zXCI+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImNvbC1zcGFuLTJcIj5cbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT17bGFiZWxDbHN9PuS4u+acujwvbGFiZWw+XG4gICAgICAgICAgICAgIDxpbnB1dCB0eXBlPVwidGV4dFwiIHZhbHVlPXtmb3JtLmhvc3R9IG9uQ2hhbmdlPXtlID0+IHNldEZvcm0oZiA9PiAoeyAuLi5mLCBob3N0OiBlLnRhcmdldC52YWx1ZSB9KSl9IGNsYXNzTmFtZT17aW5wdXRDbHN9IHBsYWNlaG9sZGVyPVwiMTI3LjAuMC4xXCIgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT17bGFiZWxDbHN9Puerr+WPozwvbGFiZWw+XG4gICAgICAgICAgICAgIDxpbnB1dCB0eXBlPVwibnVtYmVyXCIgdmFsdWU9e2Zvcm0ucG9ydH0gb25DaGFuZ2U9e2UgPT4gc2V0Rm9ybShmID0+ICh7IC4uLmYsIHBvcnQ6IE51bWJlcihlLnRhcmdldC52YWx1ZSkgfSkpfSBjbGFzc05hbWU9e2lucHV0Q2xzfSBwbGFjZWhvbGRlcj1cIjEwODBcIiAvPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdyaWQtY29scy0yIGdhcC0zXCI+XG4gICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPXtsYWJlbENsc30+55So5oi35ZCNIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtemluYy00MDAgZm9udC1ub3JtYWxcIj4o5Y+v6YCJKTwvc3Bhbj48L2xhYmVsPlxuICAgICAgICAgICAgICA8aW5wdXQgdHlwZT1cInRleHRcIiB2YWx1ZT17Zm9ybS51c2VybmFtZX0gb25DaGFuZ2U9e2UgPT4gc2V0Rm9ybShmID0+ICh7IC4uLmYsIHVzZXJuYW1lOiBlLnRhcmdldC52YWx1ZSB9KSl9IGNsYXNzTmFtZT17aW5wdXRDbHN9IHBsYWNlaG9sZGVyPVwi55So5oi35ZCNXCIgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT17bGFiZWxDbHN9PuWvhueggSA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXppbmMtNDAwIGZvbnQtbm9ybWFsXCI+KOWPr+mAiSk8L3NwYW4+PC9sYWJlbD5cbiAgICAgICAgICAgICAgPGlucHV0IHR5cGU9XCJwYXNzd29yZFwiIHZhbHVlPXtmb3JtLnBhc3N3b3JkfSBvbkNoYW5nZT17ZSA9PiBzZXRGb3JtKGYgPT4gKHsgLi4uZiwgcGFzc3dvcmQ6IGUudGFyZ2V0LnZhbHVlIH0pKX0gY2xhc3NOYW1lPXtpbnB1dENsc30gcGxhY2Vob2xkZXI9XCLlr4bnoIFcIiAvPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cImlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBjdXJzb3ItcG9pbnRlciBtdC0xXCI+XG4gICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgIHJvbGU9XCJzd2l0Y2hcIlxuICAgICAgICAgICAgICBhcmlhLWNoZWNrZWQ9e2Zvcm0uaXNfZGVmYXVsdH1cbiAgICAgICAgICAgICAgdGFiSW5kZXg9ezB9XG4gICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldEZvcm0oZiA9PiAoeyAuLi5mLCBpc19kZWZhdWx0OiAhZi5pc19kZWZhdWx0IH0pKX1cbiAgICAgICAgICAgICAgb25LZXlEb3duPXtlID0+IGUua2V5ID09PSAnRW50ZXInICYmIHNldEZvcm0oZiA9PiAoeyAuLi5mLCBpc19kZWZhdWx0OiAhZi5pc19kZWZhdWx0IH0pKX1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgcmVsYXRpdmUgdy05IGgtNSByb3VuZGVkLWZ1bGwgdHJhbnNpdGlvbi1jb2xvcnMgJHtmb3JtLmlzX2RlZmF1bHQgPyAnYmctYmx1ZS02MDAnIDogJ2JnLXppbmMtMzAwIGRhcms6YmctemluYy02MDAnfWB9XG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17YGFic29sdXRlIHRvcC0wLjUgbGVmdC0wLjUgdy00IGgtNCByb3VuZGVkLWZ1bGwgYmctd2hpdGUgc2hhZG93IHRyYW5zaXRpb24tdHJhbnNmb3JtICR7Zm9ybS5pc19kZWZhdWx0ID8gJ3RyYW5zbGF0ZS14LTQnIDogJyd9YH0gLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXppbmMtNzAwIGRhcms6dGV4dC16aW5jLTMwMFwiPuiuvuS4uum7mOiupOS7o+eQhjwvc3Bhbj5cbiAgICAgICAgICA8L2xhYmVsPlxuICAgICAgICA8L2Rpdj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGp1c3RpZnktZW5kIGdhcC0yIG10LTVcIj5cbiAgICAgICAgICA8YnV0dG9uIG9uQ2xpY2s9e29uQ2xvc2V9IGNsYXNzTmFtZT1cInB4LTQgcHktMiB0ZXh0LXNtIHJvdW5kZWQtbGcgYm9yZGVyIGJvcmRlci16aW5jLTMwMCBkYXJrOmJvcmRlci16aW5jLTYwMCB0ZXh0LXppbmMtNzAwIGRhcms6dGV4dC16aW5jLTMwMCBob3ZlcjpiZy16aW5jLTEwMCBkYXJrOmhvdmVyOmJnLXppbmMtODAwIHRyYW5zaXRpb24tY29sb3JzXCI+XG4gICAgICAgICAgICDlj5bmtohcbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8YnV0dG9uIG9uQ2xpY2s9e2hhbmRsZVNhdmV9IGRpc2FibGVkPXtzYXZpbmcgfHwgIWZvcm0ubmFtZSB8fCAhZm9ybS5ob3N0IHx8ICFmb3JtLnBvcnR9IGNsYXNzTmFtZT1cInB4LTQgcHktMiB0ZXh0LXNtIHJvdW5kZWQtbGcgYmctYmx1ZS02MDAgdGV4dC13aGl0ZSBob3ZlcjpiZy1ibHVlLTcwMCBkaXNhYmxlZDpvcGFjaXR5LTUwIGRpc2FibGVkOmN1cnNvci1ub3QtYWxsb3dlZCB0cmFuc2l0aW9uLWNvbG9yc1wiPlxuICAgICAgICAgICAge3NhdmluZyA/ICfkv53lrZjkuK0uLi4nIDogJ+S/neWtmCd9XG4gICAgICAgICAgPC9idXR0b24+XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59XG4iXSwiZmlsZSI6IkM6L1VzZXJzLzEvRGVza3RvcC9tdXNlL011c2Uvd2ViL3NyYy9jb21wb25lbnRzL3Byb3h5L1Byb3h5Rm9ybS50c3gifQ==

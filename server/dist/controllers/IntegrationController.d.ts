@@ -1,0 +1,46 @@
+import { Context } from 'koa';
+export declare class IntegrationController {
+    private getGitHubRecord;
+    private getCloudflareRecord;
+    private getNotionRecord;
+    private getMiSubRecord;
+    private getYmailRecord;
+    getGitHub: (ctx: Context) => Promise<void>;
+    connectGitHub: (ctx: Context) => Promise<void>;
+    syncGitHub: (ctx: Context) => Promise<void>;
+    disconnectGitHub: (ctx: Context) => Promise<void>;
+    getCloudflare: (ctx: Context) => Promise<void>;
+    connectCloudflare: (ctx: Context) => Promise<void>;
+    syncCloudflare: (ctx: Context) => Promise<void>;
+    disconnectCloudflare: (ctx: Context) => Promise<void>;
+    getNotion: (ctx: Context) => Promise<void>;
+    connectNotion: (ctx: Context) => Promise<void>;
+    syncNotion: (ctx: Context) => Promise<void>;
+    getNotionInsights: (ctx: Context) => Promise<void>;
+    getNotionPageContent: (ctx: Context) => Promise<void>;
+    getNotionDatabaseContent: (ctx: Context) => Promise<void>;
+    updateNotionBlock: (ctx: Context) => Promise<void>;
+    disconnectNotion: (ctx: Context) => Promise<void>;
+    getMiSub: (ctx: Context) => Promise<void>;
+    connectMiSub: (ctx: Context) => Promise<void>;
+    syncMiSub: (ctx: Context) => Promise<void>;
+    saveMiSubData: (ctx: Context) => Promise<void>;
+    saveMiSubSettings: (ctx: Context) => Promise<void>;
+    updateMiSubNodeCount: (ctx: Context) => Promise<void>;
+    batchUpdateMiSubNodes: (ctx: Context) => Promise<void>;
+    disconnectMiSub: (ctx: Context) => Promise<void>;
+    getYmail: (ctx: Context) => Promise<void>;
+    connectYmail: (ctx: Context) => Promise<void>;
+    syncYmail: (ctx: Context) => Promise<void>;
+    listYmailAddresses: (ctx: Context) => Promise<void>;
+    createYmailAddress: (ctx: Context) => Promise<void>;
+    getYmailAddressCredential: (ctx: Context) => Promise<void>;
+    getYmailAddressMails: (ctx: Context) => Promise<void>;
+    deleteYmailMail: (ctx: Context) => Promise<void>;
+    clearYmailInbox: (ctx: Context) => Promise<void>;
+    clearYmailSent: (ctx: Context) => Promise<void>;
+    deleteYmailAddress: (ctx: Context) => Promise<void>;
+    resetYmailAddressPassword: (ctx: Context) => Promise<void>;
+    disconnectYmail: (ctx: Context) => Promise<void>;
+}
+//# sourceMappingURL=IntegrationController.d.ts.map
