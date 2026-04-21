@@ -1,5 +1,0 @@
-
-> muse-mail-server@1.0.0 dev
-> npx tsx watch src/server.ts
-
-[11:10:01] [32minfo[39m: Database migrations completed
