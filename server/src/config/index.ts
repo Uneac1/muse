@@ -46,6 +46,8 @@ export const config = {
   ymailSiteUrl: process.env.YMAIL_SITE_URL || 'https://ymail.y130.icu',
   ymailApiBaseUrl: process.env.YMAIL_API_BASE_URL || 'https://ymail-api.y130.icu',
   webAppOrigin: process.env.WEB_APP_ORIGIN || 'http://localhost:5173',
+  openaiOAuthRedirectUri:
+    process.env.OPENAI_OAUTH_REDIRECT_URI || `${process.env.SERVER_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}`}/api/oauth/openai/callback`,
   googleOAuthRedirectUri:
     process.env.GOOGLE_OAUTH_REDIRECT_URI || `http://localhost:${parseInt(process.env.PORT || '3000', 10)}/api/oauth/google/callback`,
   adminGoogleOAuthRedirectUri:

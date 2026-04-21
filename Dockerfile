@@ -19,17 +19,14 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /app
 
-# Install production dependencies for server
-COPY server/package*.json ./server/
-WORKDIR /app/server
-RUN npm install --production
-
-# Copy built server files
-COPY --from=server-builder /app/server/dist ./dist
+# Copy built server files and already-installed dependencies from builder.
+# This avoids a second production-only install step that can fail on some VPS architectures.
+COPY --from=server-builder /app/server/package*.json ./server/
+COPY --from=server-builder /app/server/node_modules ./server/node_modules
+COPY --from=server-builder /app/server/dist ./server/dist
 # Copy built frontend files to the location expected by server (../../web/dist relative to src)
 # The server looks for ../../web/dist from its compiled location. 
 # If server is in /app/server/dist/server.js, it looks for /app/web/dist
-WORKDIR /app
 COPY --from=web-builder /app/web/dist ./web/dist
 
 # Setup working directory for running the app

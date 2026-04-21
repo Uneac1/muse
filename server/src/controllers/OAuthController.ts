@@ -1,6 +1,5 @@
 import { Context } from 'koa';
 import crypto from 'crypto';
-import http from 'http';
 import { OAuthService } from '../services/OAuthService';
 import { OpenAIAccountService, type OpenAIAuthSession } from '../services/OpenAIAccountService';
 import { success, fail } from '../utils/response';
@@ -10,10 +9,8 @@ const oauthService = new OAuthService();
 const openAIAccountService = new OpenAIAccountService();
 const GOOGLE_STATE_TTL_MS = 10 * 60 * 1000;
 const OPENAI_STATE_TTL_MS = 30 * 60 * 1000;
-const OPENAI_LOCAL_REDIRECT_URI = 'http://localhost:1455/auth/callback';
 const pendingGoogleStates = new Map<string, { clientId: string; clientSecret: string; loginHint?: string; appOrigin: string; createdAt: number }>();
 const pendingOpenAIStates = new Map<string, { session: OpenAIAuthSession; appOrigin: string }>();
-let openAILocalServerStarted = false;
 
 function cleanupExpiredStates() {
   const now = Date.now();
@@ -62,90 +59,74 @@ function renderCallbackHtml(payload: Record<string, any>, targetOrigin: string) 
 </html>`;
 }
 
-function ensureOpenAILocalCallbackServer() {
-  if (openAILocalServerStarted) return;
-
-  const server = http.createServer(async (req, res) => {
-    try {
-      const requestUrl = new URL(req.url || '/', OPENAI_LOCAL_REDIRECT_URI);
-      if (requestUrl.pathname !== '/auth/callback') {
-        res.statusCode = 404;
-        res.end('Not Found');
-        return;
-      }
-
-      cleanupExpiredStates();
-
-      const code = requestUrl.searchParams.get('code') || '';
-      const state = requestUrl.searchParams.get('state') || '';
-      const error = requestUrl.searchParams.get('error') || '';
-      const errorDescription = requestUrl.searchParams.get('error_description') || '';
-
-      if (error) {
-        const html = renderCallbackHtml(
-          { type: 'openai-oauth-error', error: errorDescription || error },
-          config.webAppOrigin
-        );
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(html);
-        return;
-      }
-
-      const pending = pendingOpenAIStates.get(state);
-      pendingOpenAIStates.delete(state);
-      if (!pending || !code) {
-        const html = renderCallbackHtml(
-          { type: 'openai-oauth-error', error: 'OAuth state expired or invalid' },
-          config.webAppOrigin
-        );
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(html);
-        return;
-      }
-
-      try {
-        const token = await openAIAccountService.exchangeCode(code, pending.session);
-        const html = renderCallbackHtml(
-          {
-            type: 'openai-oauth-success',
-            provider: 'openai_codex',
-            email: token.email,
-            external_account_id: token.chatgptAccountId,
-            access_token: token.accessToken,
-            refresh_token: token.refreshToken,
-            id_token: token.idToken,
-          },
-          pending.appOrigin
-        );
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(html);
-      } catch (err: any) {
-        const html = renderCallbackHtml(
-          { type: 'openai-oauth-error', error: err.message || 'OpenAI OAuth failed' },
-          pending.appOrigin
-        );
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(html);
-      }
-    } catch (err: any) {
-      res.statusCode = 500;
-      res.end(err.message || 'OAuth callback failed');
-    }
-  });
-
-  server.listen(1455, '127.0.0.1');
-  openAILocalServerStarted = true;
-}
-
 export class OAuthController {
   async authorizeOpenAI(ctx: Context) {
     cleanupExpiredStates();
     const appOrigin = ctx.get('Origin') || config.webAppOrigin;
-    ensureOpenAILocalCallbackServer();
-    const redirectUri = OPENAI_LOCAL_REDIRECT_URI;
+    const redirectUri = config.openaiOAuthRedirectUri;
     const { authUrl, session } = openAIAccountService.createSession(redirectUri);
     pendingOpenAIStates.set(session.state, { session, appOrigin });
     success(ctx, { url: authUrl, state: session.state });
+  }
+
+  async openaiCallback(ctx: Context) {
+    cleanupExpiredStates();
+    const { code, state, error, error_description } = ctx.query as Record<string, string>;
+
+    if (error) {
+      ctx.type = 'html';
+      ctx.body = renderCallbackHtml({
+        type: 'openai-oauth-error',
+        error: error_description || error,
+      }, config.webAppOrigin);
+      return;
+    }
+
+    if (!code || !state) {
+      ctx.status = 400;
+      ctx.type = 'html';
+      ctx.body = renderCallbackHtml({
+        type: 'openai-oauth-error',
+        error: 'Missing code or state',
+      }, config.webAppOrigin);
+      return;
+    }
+
+    const pending = pendingOpenAIStates.get(state);
+    pendingOpenAIStates.delete(state);
+    if (!pending) {
+      ctx.status = 400;
+      ctx.type = 'html';
+      ctx.body = renderCallbackHtml({
+        type: 'openai-oauth-error',
+        error: 'OAuth state expired or invalid',
+      }, config.webAppOrigin);
+      return;
+    }
+
+    try {
+      const token = await openAIAccountService.exchangeCode(code, pending.session);
+      ctx.type = 'html';
+      ctx.body = renderCallbackHtml(
+        {
+          type: 'openai-oauth-success',
+          provider: 'openai_codex',
+          email: token.email,
+          external_account_id: token.chatgptAccountId,
+          access_token: token.accessToken,
+          refresh_token: token.refreshToken,
+          id_token: token.idToken,
+        },
+        pending.appOrigin
+      );
+    } catch (err: any) {
+      ctx.status = 500;
+      ctx.type = 'html';
+      ctx.body = renderCallbackHtml(
+        { type: 'openai-oauth-error', error: err.message || 'OpenAI OAuth failed' },
+        pending.appOrigin
+      );
+    }
   }
 
   async authorizeGoogle(ctx: Context) {

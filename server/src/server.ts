@@ -9,5 +9,5 @@ logger.info('Database migrations completed');
 
 // 启动服务
 app.listen(config.port, () => {
-  logger.info(`Server is running on http://localhost:${config.port}`);
+  logger.info(`Server is running on port ${config.port}`);
 });
