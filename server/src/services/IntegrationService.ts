@@ -36,9 +36,11 @@ import {
   NotionReadableBlock,
   NotionUser,
 } from '../types';
+import { getSnapshot, setSnapshot } from '../utils/snapshotCache';
 
 export class IntegrationService {
   private cache = new Map<string, { expiresAt: number; value: unknown }>();
+  private inflight = new Map<string, Promise<unknown>>();
 
   private maskToken(token: string): string {
     if (!token) return '';
@@ -145,9 +147,27 @@ export class IntegrationService {
     if (!force) {
       const cached = this.getCached<T>(key);
       if (cached) return cached;
+
+      const snapshot = getSnapshot<T>(key, ttlMs);
+      if (snapshot) return this.setCached(key, snapshot, ttlMs);
+
+      const inflight = this.inflight.get(key) as Promise<T> | undefined;
+      if (inflight) return inflight;
     }
-    const value = await loader();
-    return this.setCached(key, value, ttlMs);
+
+    const promise = loader()
+      .then((value) => {
+        setSnapshot(key, value);
+        return this.setCached(key, value, ttlMs);
+      })
+      .finally(() => {
+        if (this.inflight.get(key) === promise) {
+          this.inflight.delete(key);
+        }
+      });
+
+    this.inflight.set(key, promise);
+    return promise;
   }
 
   private async mapWithConcurrency<T, R>(items: T[], concurrency: number, worker: (item: T, index: number) => Promise<R>): Promise<R[]> {
@@ -596,94 +616,98 @@ export class IntegrationService {
     return [...accountRulesets.flat(), ...zoneRulesets.flat()];
   }
 
-  async fetchGitHubData(record: IntegrationTokenRecord): Promise<GitHubIntegrationData> {
+  async fetchGitHubData(record: IntegrationTokenRecord, options?: { force?: boolean }): Promise<GitHubIntegrationData> {
     const token = record.token;
-    const profile = await this.fetchJson<GitHubProfile>(
-      'https://api.github.com/user',
-      {
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${token}`,
-          'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': 'muse-mail',
-        },
-      },
-      'GitHub profile request failed'
-    );
-
-    const [repos, starred, orgs, gists, events] = await Promise.all([
-      this.fetchGitHubPaged<GitHubRepository>('/user/repos?sort=updated&affiliation=owner,collaborator,organization_member', token),
-      this.fetchGitHubPaged<GitHubRepository>('/user/starred?sort=updated', token),
-      this.safeRequest(
-        () => this.fetchGitHubPaged<GitHubOrganization>('/user/orgs', token),
-        []
-      ),
-      this.safeRequest(
-        () => this.fetchGitHubPaged<GitHubGist>('/gists', token),
-        []
-      ),
-      this.safeRequest(
-        () => this.fetchGitHubPaged<GitHubEvent>(`/users/${profile.login}/events/public`, token),
-        []
-      ),
-    ]);
-
-    const extras = await this.fetchGitHubRepoExtras(token, repos);
-
-    return {
-      connected: true,
-      tokenMasked: this.maskToken(token),
-      lastSyncAt: record.updated_at,
-      profile,
-      repos,
-      starred,
-      orgs,
-      gists,
-      events,
-      ...extras,
-    };
-  }
-
-  async fetchCloudflareData(record: IntegrationTokenRecord): Promise<CloudflareIntegrationData> {
-    const token = record.token;
-    const [userResponse, accounts, zones] = await Promise.all([
-      this.fetchJson<{ success: boolean; result: CloudflareUser }>(
-        'https://api.cloudflare.com/client/v4/user',
+    return this.withCache(this.cacheKey('github-summary', token), 5 * 60 * 1000, !!options?.force, async () => {
+      const profile = await this.fetchJson<GitHubProfile>(
+        'https://api.github.com/user',
         {
           headers: {
+            Accept: 'application/vnd.github+json',
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'User-Agent': 'muse-mail',
           },
         },
-        'Cloudflare user request failed'
-      ),
-      this.fetchCloudflarePaged<CloudflareAccountInfo>('/accounts', token),
-      this.fetchCloudflarePaged<CloudflareZone>('/zones', token),
-    ]);
+        'GitHub profile request failed'
+      );
 
-    if (!userResponse.success) {
-      throw new Error('Cloudflare user request was not successful');
-    }
+      const [repos, starred, orgs, gists, events] = await Promise.all([
+        this.fetchGitHubPaged<GitHubRepository>('/user/repos?sort=updated&affiliation=owner,collaborator,organization_member', token),
+        this.fetchGitHubPaged<GitHubRepository>('/user/starred?sort=updated', token),
+        this.safeRequest(
+          () => this.fetchGitHubPaged<GitHubOrganization>('/user/orgs', token),
+          []
+        ),
+        this.safeRequest(
+          () => this.fetchGitHubPaged<GitHubGist>('/gists', token),
+          []
+        ),
+        this.safeRequest(
+          () => this.fetchGitHubPaged<GitHubEvent>(`/users/${profile.login}/events/public`, token),
+          []
+        ),
+      ]);
 
-    const [zoneDetails, pagesProjects, workerScripts, rulesets] = await Promise.all([
-      this.fetchCloudflareZoneDetails(token, zones),
-      this.fetchCloudflarePagesProjects(token, accounts),
-      this.fetchCloudflareWorkerScripts(token, accounts),
-      this.fetchCloudflareRulesets(token, accounts, zones),
-    ]);
+      const extras = await this.fetchGitHubRepoExtras(token, repos);
 
-    return {
-      connected: true,
-      tokenMasked: this.maskToken(token),
-      lastSyncAt: record.updated_at,
-      user: userResponse.result,
-      accounts,
-      zones,
-      zoneDetails,
-      pagesProjects,
-      workerScripts,
-      rulesets,
-    };
+      return {
+        connected: true,
+        tokenMasked: this.maskToken(token),
+        lastSyncAt: record.updated_at,
+        profile,
+        repos,
+        starred,
+        orgs,
+        gists,
+        events,
+        ...extras,
+      };
+    });
+  }
+
+  async fetchCloudflareData(record: IntegrationTokenRecord, options?: { force?: boolean }): Promise<CloudflareIntegrationData> {
+    const token = record.token;
+    return this.withCache(this.cacheKey('cloudflare-summary', token), 3 * 60 * 1000, !!options?.force, async () => {
+      const [userResponse, accounts, zones] = await Promise.all([
+        this.fetchJson<{ success: boolean; result: CloudflareUser }>(
+          'https://api.cloudflare.com/client/v4/user',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+          'Cloudflare user request failed'
+        ),
+        this.fetchCloudflarePaged<CloudflareAccountInfo>('/accounts', token),
+        this.fetchCloudflarePaged<CloudflareZone>('/zones', token),
+      ]);
+
+      if (!userResponse.success) {
+        throw new Error('Cloudflare user request was not successful');
+      }
+
+      const [zoneDetails, pagesProjects, workerScripts, rulesets] = await Promise.all([
+        this.fetchCloudflareZoneDetails(token, zones),
+        this.fetchCloudflarePagesProjects(token, accounts),
+        this.fetchCloudflareWorkerScripts(token, accounts),
+        this.fetchCloudflareRulesets(token, accounts, zones),
+      ]);
+
+      return {
+        connected: true,
+        tokenMasked: this.maskToken(token),
+        lastSyncAt: record.updated_at,
+        user: userResponse.result,
+        accounts,
+        zones,
+        zoneDetails,
+        pagesProjects,
+        workerScripts,
+        rulesets,
+      };
+    });
   }
 
   async fetchNotionData(record: IntegrationTokenRecord, options?: { force?: boolean }): Promise<NotionIntegrationData> {
@@ -929,23 +953,25 @@ export class IntegrationService {
     };
   }
 
-  async fetchMiSubData(record: IntegrationTokenRecord): Promise<MiSubIntegrationData> {
+  async fetchMiSubData(record: IntegrationTokenRecord, options?: { force?: boolean }): Promise<MiSubIntegrationData> {
     const { baseUrl, password } = this.parseMiSubRecord(record);
-    const cookie = await this.loginMiSub(baseUrl, password);
-    const [data, settings] = await Promise.all([
-      this.fetchMiSubJson<{ misubs?: MiSubSubscription[]; profiles?: MiSubProfile[] }>(baseUrl, cookie, '/api/data'),
-      this.fetchMiSubJson<MiSubSettings>(baseUrl, cookie, '/api/settings'),
-    ]);
+    return this.withCache(this.cacheKey('misub-summary', `${baseUrl}:${password}`), 60 * 1000, !!options?.force, async () => {
+      const cookie = await this.loginMiSub(baseUrl, password);
+      const [data, settings] = await Promise.all([
+        this.fetchMiSubJson<{ misubs?: MiSubSubscription[]; profiles?: MiSubProfile[] }>(baseUrl, cookie, '/api/data'),
+        this.fetchMiSubJson<MiSubSettings>(baseUrl, cookie, '/api/settings'),
+      ]);
 
-    return {
-      connected: true,
-      baseUrl,
-      passwordMasked: this.maskPassword(password),
-      lastSyncAt: record.updated_at,
-      misubs: data.misubs || [],
-      profiles: data.profiles || [],
-      settings: settings || null,
-    };
+      return {
+        connected: true,
+        baseUrl,
+        passwordMasked: this.maskPassword(password),
+        lastSyncAt: record.updated_at,
+        misubs: data.misubs || [],
+        profiles: data.profiles || [],
+        settings: settings || null,
+      };
+    });
   }
 
   async saveMiSubData(record: IntegrationTokenRecord, misubs: MiSubSubscription[], profiles: MiSubProfile[]): Promise<MiSubIntegrationData> {
@@ -955,7 +981,7 @@ export class IntegrationService {
       method: 'POST',
       body: JSON.stringify({ misubs, profiles }),
     });
-    return this.fetchMiSubData(record);
+    return this.fetchMiSubData(record, { force: true });
   }
 
   async saveMiSubSettings(record: IntegrationTokenRecord, settings: MiSubSettings): Promise<MiSubIntegrationData> {
@@ -965,7 +991,7 @@ export class IntegrationService {
       method: 'POST',
       body: JSON.stringify(settings),
     });
-    return this.fetchMiSubData(record);
+    return this.fetchMiSubData(record, { force: true });
   }
 
   async updateMiSubNodeCount(

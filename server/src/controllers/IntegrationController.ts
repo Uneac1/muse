@@ -155,7 +155,7 @@ export class IntegrationController {
 
     try {
       const record = model.upsert('github', token.trim());
-      success(ctx, await service.fetchGitHubData(record));
+      success(ctx, await service.fetchGitHubData(record, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '连接 GitHub 失败', 500);
     }
@@ -167,7 +167,7 @@ export class IntegrationController {
 
     try {
       const updated = model.upsert('github', record.token);
-      success(ctx, await service.fetchGitHubData(updated));
+      success(ctx, await service.fetchGitHubData(updated, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '同步 GitHub 失败', 500);
     }
@@ -195,7 +195,7 @@ export class IntegrationController {
 
     try {
       const record = model.upsert('cloudflare', token.trim());
-      success(ctx, await service.fetchCloudflareData(record));
+      success(ctx, await service.fetchCloudflareData(record, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '连接 Cloudflare 失败', 500);
     }
@@ -207,7 +207,7 @@ export class IntegrationController {
 
     try {
       const updated = model.upsert('cloudflare', record.token);
-      success(ctx, await service.fetchCloudflareData(updated));
+      success(ctx, await service.fetchCloudflareData(updated, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '同步 Cloudflare 失败', 500);
     }
@@ -345,7 +345,7 @@ export class IntegrationController {
 
     try {
       const updated = model.upsert('misub', record.token);
-      success(ctx, await service.fetchMiSubData(updated));
+      success(ctx, await service.fetchMiSubData(updated, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '同步 MiSub 失败', 500);
     }
@@ -441,7 +441,7 @@ export class IntegrationController {
     try {
       await ymailService.validateAdminPassword(password);
       const record = model.upsert('ymail', password);
-      success(ctx, await ymailService.fetchIntegrationData(record));
+      success(ctx, await ymailService.fetchIntegrationData(record, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '连接 Ymail 失败', 500);
     }
@@ -454,7 +454,7 @@ export class IntegrationController {
     try {
       await ymailService.validateAdminPassword(record.token);
       const updated = model.upsert('ymail', record.token);
-      success(ctx, await ymailService.fetchIntegrationData(updated));
+      success(ctx, await ymailService.fetchIntegrationData(updated, { force: true }));
     } catch (err: any) {
       fail(ctx, err.message || '同步 Ymail 失败', 500);
     }
@@ -494,12 +494,14 @@ export class IntegrationController {
     if (!domain?.trim()) return fail(ctx, 'Ymail domain is required', 400);
 
     try {
-      success(ctx, await ymailService.createAddress(record.token, {
+      const created = await ymailService.createAddress(record.token, {
         name: name.trim(),
         domain: domain.trim(),
         enablePrefix,
         enableRandomSubdomain,
-      }));
+      });
+      ymailService.invalidateIntegrationData(record);
+      success(ctx, created);
     } catch (err: any) {
       fail(ctx, err.message || '创建 Ymail 地址失败', 500);
     }
@@ -534,18 +536,10 @@ export class IntegrationController {
     const { limit, offset } = ctx.query as Record<string, string>;
 
     try {
-      const credential = await ymailService.showAddressCredential(record.token, id);
-      const mailbox = await ymailService.fetchMailboxSettings(credential.jwt);
-      const mails = await ymailService.fetchAddressMails(credential.jwt, {
+      success(ctx, await ymailService.fetchAddressMailbox(record, id, {
         limit: limit ? parseInt(limit, 10) : undefined,
         offset: offset ? parseInt(offset, 10) : undefined,
-      });
-
-      success(ctx, {
-        jwt: credential.jwt,
-        address: mailbox?.address || '',
-        ...mails,
-      });
+      }));
     } catch (err: any) {
       fail(ctx, err.message || '加载 Ymail 邮件失败', 500);
     }
@@ -562,6 +556,7 @@ export class IntegrationController {
     try {
       const credential = await ymailService.showAddressCredential(record.token, id);
       await ymailService.deleteMail(credential.jwt, mailId);
+      ymailService.invalidateAddressMails(record, id);
       success(ctx, { deleted: true });
     } catch (err: any) {
       fail(ctx, err.message || '删除 Ymail 邮件失败', 500);
@@ -577,6 +572,8 @@ export class IntegrationController {
 
     try {
       await ymailService.clearInbox(record.token, id);
+      ymailService.invalidateIntegrationData(record);
+      ymailService.invalidateAddressMails(record, id);
       success(ctx, { cleared: true });
     } catch (err: any) {
       fail(ctx, err.message || '清空 Ymail 收件箱失败', 500);
@@ -592,6 +589,8 @@ export class IntegrationController {
 
     try {
       await ymailService.clearSentItems(record.token, id);
+      ymailService.invalidateIntegrationData(record);
+      ymailService.invalidateAddressMails(record, id);
       success(ctx, { cleared: true });
     } catch (err: any) {
       fail(ctx, err.message || '清空 Ymail 发件箱失败', 500);
@@ -607,6 +606,7 @@ export class IntegrationController {
 
     try {
       await ymailService.deleteAddress(record.token, id);
+      ymailService.invalidateIntegrationData(record);
       success(ctx, { deleted: true });
     } catch (err: any) {
       fail(ctx, err.message || '删除 Ymail 地址失败', 500);
@@ -624,6 +624,7 @@ export class IntegrationController {
 
     try {
       await ymailService.resetAddressPassword(record.token, id, password.trim());
+      ymailService.invalidateIntegrationData(record);
       success(ctx, { updated: true });
     } catch (err: any) {
       fail(ctx, err.message || '重置 Ymail 密码失败', 500);

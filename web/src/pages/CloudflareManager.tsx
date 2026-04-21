@@ -17,6 +17,7 @@ import {
   Waypoints,
 } from 'lucide-react';
 import { integrationApi } from '../lib/api';
+import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import { timeAgo } from '../lib/utils';
 import type {
   CloudflareDnsRecord,
@@ -39,6 +40,8 @@ const emptyState: CloudflareIntegrationData = {
   workerScripts: [],
   rulesets: [],
 };
+const CLOUDFLARE_CACHE_KEY = 'muse.integration.cloudflare';
+const cachedCloudflare = readIntegrationCache<CloudflareIntegrationData>(CLOUDFLARE_CACHE_KEY);
 
 function SectionCard({ title, sub, action, children }: { title: string; sub?: string; action?: ReactNode; children: ReactNode }) {
   return (
@@ -78,9 +81,9 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 }
 
 export default function CloudflareManager() {
-  const [data, setData] = useState<CloudflareIntegrationData>(emptyState);
+  const [data, setData] = useState<CloudflareIntegrationData>(cachedCloudflare.value || emptyState);
   const [token, setToken] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(shouldShowInitialLoading(cachedCloudflare.value));
   const [submitting, setSubmitting] = useState(false);
   const [zoneQuery, setZoneQuery] = useState('');
   const [dnsQuery, setDnsQuery] = useState('');
@@ -90,8 +93,10 @@ export default function CloudflareManager() {
 
   const load = async () => {
     try {
-      setLoading(true);
-      setData(await integrationApi.getCloudflare());
+      setLoading(shouldShowInitialLoading(cachedCloudflare.value));
+      const result = await integrationApi.getCloudflare();
+      writeIntegrationCache(CLOUDFLARE_CACHE_KEY, result);
+      setData(result);
     } catch (err: any) {
       toast.error(err.message || '加载 Cloudflare 信息失败');
     } finally {
@@ -100,6 +105,7 @@ export default function CloudflareManager() {
   };
 
   useEffect(() => {
+    if (isIntegrationCacheFresh<CloudflareIntegrationData>(CLOUDFLARE_CACHE_KEY)) return;
     load();
   }, []);
 
@@ -111,6 +117,7 @@ export default function CloudflareManager() {
     try {
       setSubmitting(true);
       const result = await integrationApi.connectCloudflare(token.trim());
+      writeIntegrationCache(CLOUDFLARE_CACHE_KEY, result);
       setData(result);
       setToken('');
       toast.success('Cloudflare 已连接');
@@ -124,7 +131,9 @@ export default function CloudflareManager() {
   const sync = async () => {
     try {
       setSubmitting(true);
-      setData(await integrationApi.syncCloudflare());
+      const result = await integrationApi.syncCloudflare();
+      writeIntegrationCache(CLOUDFLARE_CACHE_KEY, result);
+      setData(result);
       toast.success('Cloudflare 数据已同步');
     } catch (err: any) {
       toast.error(err.message || '同步 Cloudflare 失败');
@@ -138,6 +147,7 @@ export default function CloudflareManager() {
     try {
       setSubmitting(true);
       await integrationApi.disconnectCloudflare();
+      writeIntegrationCache(CLOUDFLARE_CACHE_KEY, emptyState);
       setData(emptyState);
       toast.success('Cloudflare 已断开');
     } catch (err: any) {

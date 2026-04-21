@@ -10,6 +10,7 @@ import type {
   YmailOpenSettings,
   YmailStatistics,
 } from '../types';
+import { deleteSnapshot, deleteSnapshotsByPrefix, getSnapshot, setSnapshot } from '../utils/snapshotCache';
 
 interface YmailRequestOptions {
   method?: string;
@@ -31,6 +32,9 @@ interface YmailMailListResponse {
 }
 
 export class YmailService {
+  private cache = new Map<string, { expiresAt: number; value: unknown }>();
+  private inflight = new Map<string, Promise<unknown>>();
+
   private dispatcher = new Agent({
     connect: {
       family: 4,
@@ -52,6 +56,70 @@ export class YmailService {
 
   private sha256(value: string): string {
     return crypto.createHash('sha256').update(value).digest('hex');
+  }
+
+  private cacheKey(kind: string, token: string, suffix = '') {
+    return `${kind}:${this.maskToken(token)}:${suffix}`;
+  }
+
+  private getCached<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.value as T;
+  }
+
+  private setCached<T>(key: string, value: T, ttlMs: number) {
+    this.cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+    return value;
+  }
+
+  private async withCache<T>(key: string, ttlMs: number, force: boolean, loader: () => Promise<T>) {
+    if (!force) {
+      const cached = this.getCached<T>(key);
+      if (cached) return cached;
+
+      const snapshot = getSnapshot<T>(key, ttlMs);
+      if (snapshot) return this.setCached(key, snapshot, ttlMs);
+
+      const inflight = this.inflight.get(key) as Promise<T> | undefined;
+      if (inflight) return inflight;
+    }
+
+    const promise = loader()
+      .then((value) => {
+        setSnapshot(key, value);
+        return this.setCached(key, value, ttlMs);
+      })
+      .finally(() => {
+        if (this.inflight.get(key) === promise) {
+          this.inflight.delete(key);
+        }
+      });
+
+    this.inflight.set(key, promise);
+    return promise;
+  }
+
+  invalidateIntegrationData(record: IntegrationTokenRecord) {
+    const key = this.cacheKey('ymail-summary', record.token);
+    this.cache.delete(key);
+    this.inflight.delete(key);
+    deleteSnapshot(key);
+  }
+
+  invalidateAddressMails(record: IntegrationTokenRecord, id: number) {
+    const prefix = this.cacheKey('ymail-mails', record.token, `${id}:`);
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) this.cache.delete(key);
+    }
+    for (const key of this.inflight.keys()) {
+      if (key.startsWith(prefix)) this.inflight.delete(key);
+    }
+    deleteSnapshotsByPrefix(prefix);
   }
 
   private buildHeaders(options: YmailRequestOptions = {}): Record<string, string> {
@@ -210,23 +278,48 @@ export class YmailService {
     await this.request(`/api/mails/${mailId}`, { method: 'DELETE', jwt });
   }
 
-  async fetchIntegrationData(record: IntegrationTokenRecord): Promise<YmailIntegrationData> {
-    const [openSettings, statistics, addresses] = await Promise.all([
-      this.fetchOpenSettings(),
-      this.fetchStatistics(record.token),
-      this.listAddresses(record.token, { limit: 50, offset: 0 }),
-    ]);
+  async fetchAddressMailbox(
+    record: IntegrationTokenRecord,
+    id: number,
+    params: { limit?: number; offset?: number } = {},
+    options?: { force?: boolean }
+  ): Promise<{ jwt: string; address: string; results: YmailMailSummary[]; count: number }> {
+    const limit = params.limit ?? 20;
+    const offset = params.offset ?? 0;
+    return this.withCache(this.cacheKey('ymail-mails', record.token, `${id}:${limit}:${offset}`), 20 * 1000, !!options?.force, async () => {
+      const credential = await this.showAddressCredential(record.token, id);
+      const [mailbox, mails] = await Promise.all([
+        this.fetchMailboxSettings(credential.jwt),
+        this.fetchAddressMails(credential.jwt, { limit, offset }),
+      ]);
 
-    return {
-      connected: true,
-      tokenMasked: this.maskToken(record.token),
-      lastSyncAt: record.updated_at,
-      siteUrl: config.ymailSiteUrl,
-      apiBaseUrl: config.ymailApiBaseUrl,
-      openSettings,
-      statistics,
-      addresses: addresses.results,
-      addressCount: addresses.count,
-    };
+      return {
+        jwt: credential.jwt,
+        address: mailbox?.address || '',
+        ...mails,
+      };
+    });
+  }
+
+  async fetchIntegrationData(record: IntegrationTokenRecord, options?: { force?: boolean }): Promise<YmailIntegrationData> {
+    return this.withCache(this.cacheKey('ymail-summary', record.token), 60 * 1000, !!options?.force, async () => {
+      const [openSettings, statistics, addresses] = await Promise.all([
+        this.fetchOpenSettings(),
+        this.fetchStatistics(record.token),
+        this.listAddresses(record.token, { limit: 50, offset: 0 }),
+      ]);
+
+      return {
+        connected: true,
+        tokenMasked: this.maskToken(record.token),
+        lastSyncAt: record.updated_at,
+        siteUrl: config.ymailSiteUrl,
+        apiBaseUrl: config.ymailApiBaseUrl,
+        openSettings,
+        statistics,
+        addresses: addresses.results,
+        addressCount: addresses.count,
+      };
+    });
   }
 }

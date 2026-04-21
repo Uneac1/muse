@@ -21,6 +21,7 @@ import {
   Waypoints,
 } from 'lucide-react';
 import { integrationApi } from '../lib/api';
+import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import type { MiSubIntegrationData, MiSubProfile, MiSubSettings, MiSubSubscription, MiSubUserInfo } from '../types';
 import { timeAgo } from '../lib/utils';
 
@@ -36,6 +37,8 @@ const emptyState: MiSubIntegrationData = {
   profiles: [],
   settings: null,
 };
+const MISUB_CACHE_KEY = 'muse.integration.misub';
+const cachedMiSub = readIntegrationCache<MiSubIntegrationData>(MISUB_CACHE_KEY);
 
 function SectionCard({ title, sub, action, children }: { title: string; sub?: string; action?: ReactNode; children: ReactNode }) {
   return (
@@ -123,10 +126,10 @@ function normalizeBaseUrl(url: string) {
 
 export default function SubscriptionManager() {
   const [activePanel, setActivePanel] = useState<'subscriptions' | 'profiles' | 'settings'>('subscriptions');
-  const [data, setData] = useState<MiSubIntegrationData>(emptyState);
+  const [data, setData] = useState<MiSubIntegrationData>(cachedMiSub.value || emptyState);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_URL);
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(shouldShowInitialLoading(cachedMiSub.value));
   const [submitting, setSubmitting] = useState(false);
   const [subsSaving, setSubsSaving] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -144,6 +147,7 @@ export default function SubscriptionManager() {
   const [baselineSettings, setBaselineSettings] = useState<MiSubSettings | null>(null);
 
   const hydrate = (next: MiSubIntegrationData) => {
+    writeIntegrationCache(MISUB_CACHE_KEY, next);
     setData(next);
     setBaseUrl(next.baseUrl || DEFAULT_URL);
     setDraftMisubs(next.misubs || []);
@@ -157,7 +161,7 @@ export default function SubscriptionManager() {
 
   const load = async () => {
     try {
-      setLoading(true);
+      setLoading(shouldShowInitialLoading(cachedMiSub.value));
       const result = await integrationApi.getMiSub();
       hydrate(result);
     } catch (err: any) {
@@ -168,6 +172,7 @@ export default function SubscriptionManager() {
   };
 
   useEffect(() => {
+    if (isIntegrationCacheFresh<MiSubIntegrationData>(MISUB_CACHE_KEY)) return;
     load();
   }, []);
 

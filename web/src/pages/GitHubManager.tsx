@@ -20,6 +20,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { integrationApi } from '../lib/api';
+import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import { timeAgo } from '../lib/utils';
 import type { GitHubEvent, GitHubGist, GitHubIntegrationData, GitHubIssue, GitHubOrganization, GitHubPullRequest, GitHubRelease, GitHubRepository } from '../types';
 
@@ -38,6 +39,8 @@ const emptyState: GitHubIntegrationData = {
   releases: [],
   branches: [],
 };
+const GITHUB_CACHE_KEY = 'muse.integration.github';
+const cachedGitHub = readIntegrationCache<GitHubIntegrationData>(GITHUB_CACHE_KEY);
 
 function SectionCard({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
   return (
@@ -54,15 +57,16 @@ function SectionCard({ title, sub, children }: { title: string; sub?: string; ch
 }
 
 function RepoList({ title, items, emptyText }: { title: string; items: GitHubRepository[]; emptyText: string }) {
+  const visibleItems = items.slice(0, 60);
   return (
-    <SectionCard title={title} sub={`${items.length} 条记录`}>
+    <SectionCard title={title} sub={items.length > visibleItems.length ? `${items.length} 条记录 · 先渲染最近 ${visibleItems.length} 条` : `${items.length} 条记录`}>
       <div className="space-y-3">
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-background/40 px-5 py-12 text-center text-sm text-muted-foreground">
             {emptyText}
           </div>
         ) : (
-          items.map((repo) => (
+          visibleItems.map((repo) => (
             <div key={repo.id} className="rounded-2xl border border-border bg-background/40 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-2">
@@ -120,17 +124,19 @@ function SimpleGrid<T>({ items, emptyText, render }: { items: T[]; emptyText: st
 }
 
 export default function GitHubManager() {
-  const [data, setData] = useState<GitHubIntegrationData>(emptyState);
+  const [data, setData] = useState<GitHubIntegrationData>(cachedGitHub.value || emptyState);
   const [token, setToken] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(shouldShowInitialLoading(cachedGitHub.value));
   const [submitting, setSubmitting] = useState(false);
   const [repoQuery, setRepoQuery] = useState('');
   const [workQuery, setWorkQuery] = useState('');
 
   const load = async () => {
     try {
-      setLoading(true);
-      setData(await integrationApi.getGitHub());
+      setLoading(shouldShowInitialLoading(cachedGitHub.value));
+      const result = await integrationApi.getGitHub();
+      writeIntegrationCache(GITHUB_CACHE_KEY, result);
+      setData(result);
     } catch (err: any) {
       toast.error(err.message || '加载 GitHub 信息失败');
     } finally {
@@ -139,6 +145,7 @@ export default function GitHubManager() {
   };
 
   useEffect(() => {
+    if (isIntegrationCacheFresh<GitHubIntegrationData>(GITHUB_CACHE_KEY)) return;
     load();
   }, []);
 
@@ -150,6 +157,7 @@ export default function GitHubManager() {
     try {
       setSubmitting(true);
       const result = await integrationApi.connectGitHub(token.trim());
+      writeIntegrationCache(GITHUB_CACHE_KEY, result);
       setData(result);
       setToken('');
       toast.success('GitHub 已连接');
@@ -163,7 +171,9 @@ export default function GitHubManager() {
   const sync = async () => {
     try {
       setSubmitting(true);
-      setData(await integrationApi.syncGitHub());
+      const result = await integrationApi.syncGitHub();
+      writeIntegrationCache(GITHUB_CACHE_KEY, result);
+      setData(result);
       toast.success('GitHub 数据已同步');
     } catch (err: any) {
       toast.error(err.message || '同步 GitHub 失败');
@@ -177,6 +187,7 @@ export default function GitHubManager() {
     try {
       setSubmitting(true);
       await integrationApi.disconnectGitHub();
+      writeIntegrationCache(GITHUB_CACHE_KEY, emptyState);
       setData(emptyState);
       toast.success('GitHub 已断开');
     } catch (err: any) {

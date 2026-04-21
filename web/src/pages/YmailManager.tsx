@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { BadgePlus, Copy, ExternalLink, Eye, KeyRound, Mail, MailPlus, RefreshCw, Search, ShieldCheck, Trash2, Unplug } from 'lucide-react';
 import { integrationApi } from '../lib/api';
+import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import { timeAgo } from '../lib/utils';
 import type { YmailAddressCredential, YmailAddressSummary, YmailIntegrationData, YmailMailSummary } from '../types';
 
@@ -17,6 +18,30 @@ const emptyState: YmailIntegrationData = {
   addresses: [],
   addressCount: 0,
 };
+const YMAIL_CACHE_KEY = 'muse.integration.ymail';
+const cachedYmail = readIntegrationCache<YmailIntegrationData>(YMAIL_CACHE_KEY);
+const initialYmailAddress = cachedYmail.value?.addresses?.[0] || null;
+
+type YmailMailCache = {
+  jwt?: string;
+  address?: string;
+  results?: YmailMailSummary[];
+  count?: number;
+};
+
+function ymailMailCacheKey(id: number) {
+  return `muse.integration.ymail.mails.${id}`;
+}
+
+function scheduleIdleTask(task: () => void) {
+  if ('requestIdleCallback' in window) {
+    const id = window.requestIdleCallback(() => task(), { timeout: 1200 });
+    return () => window.cancelIdleCallback(id);
+  }
+
+  const id = globalThis.setTimeout(task, 350);
+  return () => globalThis.clearTimeout(id);
+}
 
 function SectionCard({ title, sub, action, children }: { title: string; sub?: string; action?: ReactNode; children: ReactNode }) {
   return (
@@ -62,29 +87,35 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 }
 
 export default function YmailManager() {
-  const [data, setData] = useState<YmailIntegrationData>(emptyState);
+  const [data, setData] = useState<YmailIntegrationData>(cachedYmail.value || emptyState);
   const [adminPassword, setAdminPassword] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(shouldShowInitialLoading(cachedYmail.value));
   const [submitting, setSubmitting] = useState(false);
   const [query, setQuery] = useState('');
-  const [addresses, setAddresses] = useState<YmailAddressSummary[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<YmailAddressSummary | null>(null);
-  const [credential, setCredential] = useState<YmailAddressCredential | null>(null);
-  const [mails, setMails] = useState<YmailMailSummary[]>([]);
-  const [mailCount, setMailCount] = useState(0);
-  const [selectedMail, setSelectedMail] = useState<YmailMailSummary | null>(null);
+  const [addresses, setAddresses] = useState<YmailAddressSummary[]>(cachedYmail.value?.addresses || []);
+  const [selectedAddress, setSelectedAddress] = useState<YmailAddressSummary | null>(initialYmailAddress);
+  const initialMailCache = initialYmailAddress ? readIntegrationCache<YmailMailCache>(ymailMailCacheKey(initialYmailAddress.id), 60 * 1000).value : null;
+  const [credential, setCredential] = useState<YmailAddressCredential | null>(initialMailCache?.jwt ? { jwt: initialMailCache.jwt, address: initialMailCache.address } : null);
+  const [mails, setMails] = useState<YmailMailSummary[]>(initialMailCache?.results || []);
+  const [mailCount, setMailCount] = useState(initialMailCache?.count || 0);
+  const [selectedMail, setSelectedMail] = useState<YmailMailSummary | null>(initialMailCache?.results?.[0] || null);
   const [mailLoading, setMailLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [createForm, setCreateForm] = useState({ name: '', domain: '', enablePrefix: true, enableRandomSubdomain: false });
 
+  const applyData = (result: YmailIntegrationData) => {
+    writeIntegrationCache(YMAIL_CACHE_KEY, result);
+    setData(result);
+    setAddresses(result.addresses || []);
+    setSelectedAddress((prev) => (prev ? result.addresses.find((item) => item.id === prev.id) || result.addresses[0] || null : result.addresses[0] || null));
+  };
+
   const load = async () => {
     try {
-      setLoading(true);
+      setLoading(shouldShowInitialLoading(cachedYmail.value));
       const result = await integrationApi.getYmail();
-      setData(result);
-      setAddresses(result.addresses || []);
-      setSelectedAddress((prev) => (prev ? result.addresses.find((item) => item.id === prev.id) || result.addresses[0] || null : result.addresses[0] || null));
+      applyData(result);
       setCreateForm((prev) => ({ ...prev, domain: prev.domain || result.openSettings?.domains?.[0] || '', enablePrefix: result.openSettings?.prefix ? true : prev.enablePrefix }));
     } catch (err: any) {
       toast.error(err.message || '加载 Ymail 失败');
@@ -105,17 +136,32 @@ export default function YmailManager() {
   };
 
   useEffect(() => {
+    if (isIntegrationCacheFresh<YmailIntegrationData>(YMAIL_CACHE_KEY)) return;
     load();
   }, []);
 
   useEffect(() => {
     if (!selectedAddress || !data.connected) return;
     let cancelled = false;
+    const cacheKey = ymailMailCacheKey(selectedAddress.id);
+    const cachedMails = readIntegrationCache<YmailMailCache>(cacheKey, 60 * 1000).value;
+
+    if (cachedMails) {
+      setCredential((prev) => (prev?.jwt === cachedMails.jwt ? prev : { ...(prev || {}), jwt: cachedMails.jwt || '', address: cachedMails.address || '' }));
+      setMails(cachedMails.results || []);
+      setMailCount(cachedMails.count || 0);
+      setSelectedMail((prev) => (prev ? cachedMails.results?.find((item) => item.id === prev.id) || cachedMails.results?.[0] || null : cachedMails.results?.[0] || null));
+      if (!autoRefresh) return () => {
+        cancelled = true;
+      };
+    }
+
     const fetchMails = async () => {
       try {
-        setMailLoading(true);
+        setMailLoading(!cachedMails);
         const result = await integrationApi.getYmailAddressMails(selectedAddress.id, { limit: 20, offset: 0 });
         if (cancelled) return;
+        writeIntegrationCache(cacheKey, result);
         setCredential((prev) => (prev?.jwt === result.jwt ? prev : { ...(prev || {}), jwt: result.jwt, address: result.address }));
         setMails(result.results || []);
         setMailCount(result.count || 0);
@@ -126,11 +172,15 @@ export default function YmailManager() {
         if (!cancelled) setMailLoading(false);
       }
     };
-    fetchMails();
-    if (!autoRefresh) return () => { cancelled = true; };
+    const cancelIdleFetch = cachedMails ? () => undefined : scheduleIdleTask(fetchMails);
+    if (!autoRefresh) return () => {
+      cancelled = true;
+      cancelIdleFetch();
+    };
     const timer = window.setInterval(fetchMails, 20000);
     return () => {
       cancelled = true;
+      cancelIdleFetch();
       window.clearInterval(timer);
     };
   }, [selectedAddress?.id, data.connected, autoRefresh]);
@@ -140,9 +190,7 @@ export default function YmailManager() {
     try {
       setSubmitting(true);
       const result = await integrationApi.connectYmail(adminPassword.trim());
-      setData(result);
-      setAddresses(result.addresses || []);
-      setSelectedAddress(result.addresses[0] || null);
+      applyData(result);
       setCreateForm((prev) => ({ ...prev, domain: result.openSettings?.domains?.[0] || prev.domain }));
       setAdminPassword('');
       toast.success('Ymail 后台已连接');
@@ -157,8 +205,7 @@ export default function YmailManager() {
     try {
       setSubmitting(true);
       const result = await integrationApi.syncYmail();
-      setData(result);
-      setAddresses(result.addresses || []);
+      applyData(result);
       toast.success('Ymail 数据已同步');
     } catch (err: any) {
       toast.error(err.message || '同步 Ymail 失败');
@@ -172,6 +219,7 @@ export default function YmailManager() {
     try {
       setSubmitting(true);
       await integrationApi.disconnectYmail();
+      writeIntegrationCache(YMAIL_CACHE_KEY, emptyState);
       setData(emptyState);
       setAddresses([]);
       setSelectedAddress(null);
@@ -238,6 +286,7 @@ export default function YmailManager() {
       await integrationApi.clearYmailInbox(id);
       if (selectedAddress?.id === id) {
         const result = await integrationApi.getYmailAddressMails(id, { limit: 20, offset: 0 });
+        writeIntegrationCache(ymailMailCacheKey(id), result);
         setMails(result.results || []);
         setMailCount(result.count || 0);
         setSelectedMail(result.results[0] || null);
@@ -265,6 +314,7 @@ export default function YmailManager() {
     try {
       await integrationApi.deleteYmailMail(selectedAddress.id, mailId);
       const result = await integrationApi.getYmailAddressMails(selectedAddress.id, { limit: 20, offset: 0 });
+      writeIntegrationCache(ymailMailCacheKey(selectedAddress.id), result);
       setMails(result.results || []);
       setMailCount(result.count || 0);
       setSelectedMail(result.results[0] || null);

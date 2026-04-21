@@ -63,5 +63,9 @@ export function warmCriticalRoutes() {
     AccountsPage.preload(),
     AiStudioPage.preload(),
     ProxySettingsPage.preload(),
+    SubscriptionManagerPage.preload(),
+    CloudflareManagerPage.preload(),
+    GitHubManagerPage.preload(),
+    YmailManagerPage.preload(),
   ]);
 }
