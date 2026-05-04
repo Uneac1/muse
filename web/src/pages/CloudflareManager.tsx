@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -10,12 +10,12 @@ import {
   Network,
   RefreshCw,
   Route,
-  Search,
   Shield,
   Unplug,
   UserCircle2,
   Waypoints,
 } from 'lucide-react';
+import { EmptyState, SearchBox, SectionCard } from '../components/ui/patterns';
 import { integrationApi } from '../lib/api';
 import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import { timeAgo } from '../lib/utils';
@@ -42,43 +42,6 @@ const emptyState: CloudflareIntegrationData = {
 };
 const CLOUDFLARE_CACHE_KEY = 'muse.integration.cloudflare';
 const cachedCloudflare = readIntegrationCache<CloudflareIntegrationData>(CLOUDFLARE_CACHE_KEY);
-
-function SectionCard({ title, sub, action, children }: { title: string; sub?: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          {sub && <p className="text-sm text-muted-foreground">{sub}</p>}
-        </div>
-        {action}
-      </div>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-border bg-background/40 px-5 py-12 text-center text-sm text-muted-foreground">
-      {text}
-    </div>
-  );
-}
-
-function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
-  return (
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-border bg-background/70 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-      />
-    </div>
-  );
-}
 
 export default function CloudflareManager() {
   const [data, setData] = useState<CloudflareIntegrationData>(cachedCloudflare.value || emptyState);

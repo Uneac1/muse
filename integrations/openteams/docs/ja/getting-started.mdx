@@ -1,0 +1,155 @@
+---
+title: "クイックスタート"
+description: "macOS・Linux・Windowsでのopenteamsクイックスタートガイド"
+sidebarTitle: "クイックスタート"
+---
+
+## 対応システム
+- Windows
+- macOS（Intel および Apple Silicon）
+- Linux
+
+## 前提条件
+openteamsを使用する前に、大規模言語モデルへのアクセス権限があることを確認してください。[モデルプロバイダー設定ドキュメント](/ja/custom-providers)を参考に、openteamsにAPIキーを設定できます。
+
+他のコーディングエージェントをすでに使用しているか、使用予定の場合は、正しくインストールおよび認証されていることを確認してください。現在openteamsは10種類の[コーディングエージェント](/ja/supported-coding-agents)をサポートしています。よく使われるエージェントのインストール方法は以下の通りです：
+
+| エージェント | インストールコマンド |
+|-------|-------------|
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `npm install -g @anthropic-ai/claude-code` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` |
+| [Codex](https://github.com/openai/codex) | `npm install -g @openai/codex` |
+| [OpenCode](https://github.com/anomalyco/opencode) | `npm install -g opencode-ai@latest` |
+
+<Tip>
+各コーディングエージェントの公式ドキュメントを参照してインストールできます。
+</Tip>
+
+## インストール
+
+<Tabs>
+  <Tab title="Windows">
+    **方法1：npxを使用**
+
+    ```bash
+    npx openteams-web
+    ```
+
+    **方法2：デスクトップインストーラー（推奨）**
+
+    最新のインストーラー（`.msi`）をダウンロード：
+
+    <a href="https://github.com/openteams-lab/openteams/releases/latest" target="_blank" rel="noopener noreferrer">
+      <img noZoom src="https://img.shields.io/badge/ダウンロード-Windows-0078D6?style=for-the-badge&logo=windows" alt="Windows版をダウンロード" />
+    </a>
+
+    インストール後、**openteams** を直接起動します。
+  </Tab>
+
+  <Tab title="macOS">
+    **npxを使用してインストール・起動**
+
+    ```bash
+    npx openteams-web
+    ```
+  </Tab>
+
+  <Tab title="Linux">
+    **方法1：npxを使用（推奨）**
+
+    ```bash
+    npx openteams-web
+    ```
+
+    **方法2：デスクトップインストーラー**
+
+    ReleasesからLinuxパッケージをダウンロード：
+    <a href="https://github.com/openteams-lab/openteams/releases/latest" target="_blank" rel="noopener noreferrer">
+      <img noZoom src="https://img.shields.io/badge/ダウンロード-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux版をダウンロード" />
+    </a>
+
+     `.deb` インストールコマンド：
+
+    ```bash
+    sudo apt install ./openteams-*.deb
+    ```
+
+  </Tab>
+</Tabs>
+
+## クイックスタートデモ
+以下は、openteamsでセッションを作成し、チームをインポートしてコラボレーションを開始する方法を示したクイックデモです：
+
+<video
+  src="../images/en/quick_demo.mp4"
+   autoPlay
+   loop
+   muted
+   playsInline/>
+
+## クイックスタート
+
+<Steps>
+
+<Step title="openteamsを起動">
+  起動方法を選択してください：
+
+  **方法1：デスクトップインストーラーから起動**
+  アプリケーションメニューからインストール済みの **openteams** を開きます。
+
+  **方法2：npxから起動**
+  ```bash
+  npx openteams-web
+  ```
+  <Note>
+  デフォルトではopenteams-cliが基本エージェントとして使用されます。モデルに正常にアクセスするには、[モデルプロバイダー設定](/ja/custom-providers)でAPIを設定する必要があります。
+    他のエージェントも使用できます。詳細は[対応コーディングエージェント](/ja/supported-coding-agents)を参照してください。使用前に正しくインストールおよび認証されていることを確認してください。
+  </Note>
+</Step>
+
+<Step title="セッションを作成">
+  起動後、「新規セッション」ボタンをクリックし、セッション名を入力してデフォルトのワークスペースパスを選択します。
+  これは必須ではなく、入力をスキップした場合、セッションタイトルとデフォルトワークスペースはデフォルト値のままになります。
+
+  ![セッションを作成](../images/en/create_session_zh.png)
+
+  <Note>
+  デフォルトワークスペースは、このセッション内のすべてのAIメンバーのデフォルト作業パスです。チーム設定で各メンバーのワークスペースパスを個別に設定でき、セッションのデフォルトワークスペースより優先されます。
+  </Note>
+</Step>
+
+<Step title="チームを作成">
+  「今すぐチームを作成」ボタンをクリックし、タスクに適したプリセットチームを選択するか、プリセットAIメンバーやカスタムAIメンバーを追加して専属チームを編成します。
+  ![チームを作成](../images/en/createteam_zh.png)
+
+  フルスタック納品チームを例にすると、チームにはプロジェクトマネージャー、フロントエンド開発者、バックエンド開発者、テストエンジニア、UIデザイナーなどの役割が含まれ、完全なプロジェクト納品を協力して完遂できます。
+  各メンバーのモデル・作業パス・スキルを設定する必要がありますが、デフォルト設定のままでも直接使用できます。
+  ![チームメンバー設定](../images/en/team_members.png)
+</Step>
+
+<Step title="コラボレーション開始">
+  AIチームメンバーの召喚に成功しました。さあ、仕事を始めましょう！入力欄にメッセージを入力し、@メンションでチームメンバーに送信できます。
+  ![コラボレーション開始](../images/en/start_collabrate.png)
+  例えば、@プロジェクトマネージャーにメッセージを送ってタスクを割り当てたり、@フロントエンド開発者にログインページのコードを作成するよう依頼したりできます。
+
+</Step>
+</Steps>
+
+<Tip>
+おめでとうございます！openteamsの基本的な使い方を習得しました！
+
+ニーズに応じてさまざまな種類のチームを作成し、さまざまなタスクを完遂できます。さらに多くの機能については、引き続き後続の章をお読みください。
+</Tip>
+
+## 次のステップ
+
+<CardGroup cols={2}>
+  <Card title="チームを管理" icon="users" href="/ja/advanced-usage/create-team">
+    AIチームを管理して協業効率を最大化
+  </Card>
+
+  <Card title="スキルを使用" icon="brain" href="/ja/advanced-usage/skills">
+    AIメンバーに強力なスキルを設定
+  </Card>
+</CardGroup>
+

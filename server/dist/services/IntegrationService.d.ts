@@ -1,7 +1,12 @@
-import { CloudflareIntegrationData, GitHubIntegrationData, IntegrationTokenRecord, MiSubBatchUpdateResult, MiSubIntegrationData, MiSubProfile, MiSubSettings, MiSubSubscription, NotionDatabaseContent, NotionIntegrationData, NotionInsights, NotionPageContent, NotionReadableBlock } from '../types';
+import { CloudflareIntegrationData, GitHubIntegrationData, IntegrationTokenRecord, LinuxDoIntegrationData, MiSubBatchUpdateResult, MiSubIntegrationData, MiSubProfile, MiSubSettings, MiSubSubscription, NotionDatabaseContent, NotionIntegrationData, NotionInsights, NotionPageContent, NotionReadableBlock } from '../types';
 export declare class IntegrationService {
+    private linuxDoConnectService;
     private cache;
     private inflight;
+    private readonly notionInsightsSampleLimit;
+    private readonly externalRequestConcurrency;
+    private readonly notionSearchPageLimit;
+    private readonly notionContentPageLimit;
     private maskToken;
     private fetchJson;
     private fetchGitHubPaged;
@@ -42,6 +47,9 @@ export declare class IntegrationService {
     fetchNotionData(record: IntegrationTokenRecord, options?: {
         force?: boolean;
     }): Promise<NotionIntegrationData>;
+    fetchLinuxDoData(record: IntegrationTokenRecord, options?: {
+        force?: boolean;
+    }): Promise<LinuxDoIntegrationData>;
     fetchNotionInsights(record: IntegrationTokenRecord, options?: {
         force?: boolean;
     }): Promise<NotionInsights>;

@@ -1,0 +1,93 @@
+{
+  "build": {
+    "beforeBuildCommand": "pnpm -C frontend build && node scripts/desktop/prepare-sidecar.js --release",
+    "devPath": "../frontend/dist",
+    "distDir": "../frontend/dist"
+  },
+  "package": {
+    "productName": "openteams",
+    "version": "0.3.8"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "open": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": [
+        "app",
+        "msi",
+        "dmg",
+        "appimage",
+        "deb",
+        "updater"
+      ],
+      "identifier": "com.openteams.desktop",
+      "icon": [
+        "icons/icon-square.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "windows": {
+        "wix": {
+          "bannerPath": "wix/assets/banner.bmp",
+          "dialogImagePath": "wix/assets/dialog.bmp",
+          "fragmentPaths": [
+            "wix/fragments/openteams-directory.wxs"
+          ]
+        }
+      },
+      "deb": {
+        "files": {
+          "/DEBIAN/postrm": "debian/postrm",
+          "/usr/share/icons/hicolor/scalable/apps/openteams.svg": "icons/logo_black.svg"
+        }
+      },
+      "externalBin": [
+        "bin/server"
+      ]
+    },
+    "updater": {
+      "active": true,
+      "dialog": false,
+      "endpoints": [
+        "https://github.com/openteams-lab/openteams/releases/latest/download/latest.json"
+      ],
+      "pubkey": ""
+    },
+    "windows": [
+      {
+        "title": "openteams",
+        "width": 1920,
+        "height": 1080,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "dangerousRemoteDomainIpcAccess": [
+        {
+          "scheme": "http",
+          "domain": "127.0.0.1",
+          "windows": [
+            "main"
+          ],
+          "enableTauriAPI": true
+        },
+        {
+          "scheme": "http",
+          "domain": "localhost",
+          "windows": [
+            "main"
+          ],
+          "enableTauriAPI": true
+        }
+      ]
+    }
+  }
+}

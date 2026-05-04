@@ -11,7 +11,9 @@ export declare class AiController {
     testAccount(ctx: Context): Promise<void>;
     listThreads(ctx: Context): Promise<void>;
     getMessages(ctx: Context): Promise<void>;
+    updateThread(ctx: Context): Promise<void>;
     deleteThread(ctx: Context): Promise<void>;
+    clearThreads(ctx: Context): Promise<void>;
     chat(ctx: Context): Promise<void>;
 }
 //# sourceMappingURL=AiController.d.ts.map

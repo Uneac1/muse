@@ -1,0 +1,103 @@
+---
+title: "OpenAI Codex"
+description: "Set up OpenAI Codex integration"
+icon: /logos/openai-logo.svg
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+
+<Steps>
+<Step title="Run OpenAI Codex">
+  ```bash
+  npx -y @openai/codex
+  ```
+</Step>
+
+<Step title="Follow the login instructions">
+  Complete the authentication flow as prompted. Follow the authentication instructions from the [OpenAI help centre](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan) to use Codex with your ChatGPT plan.
+
+  Alternatively, Codex can be used via the OpenAI API by setting the `OPENAI_API_KEY` environment variable. For more details, see the [OpenAI documentation](https://developers.openai.com/codex/pricing/#use-an-openai-api-key)
+</Step>
+
+<Step title="Start openteams">
+  Once authenticated, launch openteams:
+
+  **Option 1: Run with npx**
+  ```bash
+  npx openteams
+  ```
+
+  **Option 2: Use Desktop Installer**
+  Launch the installed desktop app directly. See [Getting Started](/getting-started) for installer instructions.
+
+  You can now select OpenAI Codex when creating task attempts.
+</Step>
+</Steps>
+
+## Custom Configuration Directory
+
+By default, Codex stores its configuration and session data in `~/.codex`. If you have configured a custom location using the `CODEX_HOME` environment variable, openteams will automatically detect and use that location.
+
+```bash
+# Example: Using a project-specific Codex configuration
+export CODEX_HOME=/path/to/custom/codex
+npx openteams
+```
+
+This is useful for:
+- Project-specific Codex profiles
+- Separating work and personal configurations
+- Custom automation setups
+
+
+

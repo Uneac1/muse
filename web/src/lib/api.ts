@@ -4,6 +4,8 @@ import type {
   Account,
   MailMessage,
   Proxy,
+  CrsRelayStatus,
+  CrsRelayTestResult,
   ImportRequest,
   ImportResult,
   ExportRequest,
@@ -15,9 +17,13 @@ import type {
   Tag,
   ImportPreviewResult,
   GoogleOAuthAuthorizeResult,
+  OpenAILaunchAuthorizeResult,
+  OpenAIOAuthResult,
+  OAuthProviderStatus,
   AuthCheckResult,
   AdminOAuthAuthorizeResult,
   GitHubIntegrationData,
+  LinuxDoIntegrationData,
   CloudflareIntegrationData,
   NotionIntegrationData,
   NotionInsights,
@@ -25,6 +31,9 @@ import type {
   NotionReadableBlock,
   NotionDatabaseContent,
   MiSubBatchUpdateResult,
+  MiSubAiAnalysis,
+  MiSubAiInspectionConfig,
+  MiSubAiInspectionState,
   MiSubIntegrationData,
   MiSubProfile,
   MiSubSettings,
@@ -36,17 +45,47 @@ import type {
   AiAccount,
   AiThread,
   AiMessage,
+  AiRuntimeContext,
   AiChatResult,
   AiAccountDiagnostics,
   AiConnectionTestResult,
   NewspaperBriefing,
+  NewspaperBriefingAiInsight,
+  NewspaperHealth,
   NewspaperArticleDetail,
+  NewspaperAiInsight,
+  CodexFreeImportResult,
   TokenAccountView,
   PersonalOsWorkspace,
   CommandCenterItem,
   PersonalOsRuleView,
+  AgentAutonomyState,
+  AgentRuntimeActivityState,
+  AgentRuntimeEvent,
+  AgentRuntimeMemoryState,
+  AgentRuntimeView,
+  AgentIncidentReportInput,
+  AgentIncidentReportResult,
+  AgentProfileMemory,
+  AgentSkillJournalView,
   PersonalMemoryView,
+  PersonalMemoryAiPlan,
+  PersonalMemoryAiSuggestion,
+  PersonalMemoryIngestionState,
+  PersonalAccountAiPlan,
+  PersonalAccountAiSuggestion,
+  PersonalProxyAiPlan,
+  PersonalProxyAiSuggestion,
+  PersonalTokenAiPlan,
+  PersonalTokenAiSuggestion,
+  CodexDesktopState,
+  CodexDesktopSettings,
+  CodexDesktopActivationResult,
+  CodexDesktopAutoSwitchDeferred,
+  CodexUsageHistory,
+  OpenTeamsStatus,
 } from '../types';
+import { reportRuntimeIncident } from './runtimeIncidentReporter';
 
 const API_BASE = '/api';
 const inflightGetRequests = new Map<string, Promise<any>>();
@@ -56,10 +95,37 @@ function qs(params?: Record<string, any>): string {
   return Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
 }
 
+function localizeApiError(url: string, status: number, statusText: string, message?: string) {
+  const detail = message?.trim();
+
+  if (status === 404 && url.includes('/newspaper/briefing-insight')) {
+    return 'AI 总编台接口不存在。当前运行中的后端还是旧版本，请重启 server 后再试。';
+  }
+
+  if (status === 404 && url.includes('/newspaper/health')) {
+    return '报纸 AI 自检接口不存在。当前运行中的后端还是旧版本，请重启 server 后再试。';
+  }
+
+  if (status === 404 && url.includes('/newspaper/insight')) {
+    return 'AI 导读接口不存在。当前运行中的后端还是旧版本，请重启 server 后再试。';
+  }
+
+  if (status === 404 && url.includes('/newspaper/article')) {
+    return '阅读详情接口不存在。当前运行中的后端还是旧版本，请重启 server 后再试。';
+  }
+
+  if (detail) {
+    return `${status} ${statusText}：${detail}`;
+  }
+
+  return `Request failed: ${status} ${statusText}`;
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const method = (options?.method || 'GET').toUpperCase();
   const isCacheableGet = method === 'GET';
   const dedupeKey = isCacheableGet ? `${method}:${url}` : null;
+  const shouldReportIncident = !url.includes('/os/agent/incidents');
 
   if (dedupeKey && inflightGetRequests.has(dedupeKey)) {
     return inflightGetRequests.get(dedupeKey) as Promise<T>;
@@ -73,7 +139,22 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}${url}`, { ...options, headers });
+    } catch (error: any) {
+      const detail = error?.message || 'fetch failed';
+      if (shouldReportIncident) {
+        void reportRuntimeIncident({
+          title: '前端 API 网络请求失败',
+          detail: `${method} ${url}\n\n${detail}`,
+          severity: 'watch',
+          source: `api:${method} ${url}`,
+          kind: 'api_error',
+        });
+      }
+      throw new Error(`网络请求失败：${detail}。请确认前端代理与后端服务都已重启，并查看 AI 账号诊断里的最近错误。`);
+    }
 
     if (res.status === 401) {
       localStorage.removeItem('auth_token');
@@ -87,21 +168,44 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     try {
       json = JSON.parse(raw) as ApiResponse<T>;
     } catch {
+      if (res.status === 500 && /internal server error/i.test(raw || res.statusText)) {
+        throw new Error('后端服务未启动或 Vite 代理目标不可达。请先启动 server，或检查 VITE_DEV_PROXY_TARGET 是否指向正确端口。');
+      }
       throw new Error(raw || `${res.status} ${res.statusText}`);
     }
 
-    if (json.code !== 200) throw new Error(json.message || `Request failed: ${json.code}`);
+    if (json.code !== 200) {
+      if (shouldReportIncident) {
+        void reportRuntimeIncident({
+          title: '前端 API 业务请求失败',
+          detail: `${method} ${url}\n\n${json.message || `${res.status} ${res.statusText}`}`,
+          severity: res.status >= 500 ? 'critical' : 'watch',
+          source: `api:${method} ${url}`,
+          kind: 'api_error',
+          metadata: {
+            status: res.status,
+            statusText: res.statusText,
+            code: json.code,
+          },
+        });
+      }
+      if (res.status >= 400) {
+        throw new Error(localizeApiError(url, res.status, res.statusText, json.message));
+      }
+      throw new Error(json.message ? `code ${json.code}：${json.message}` : `Request failed: code ${json.code}`);
+    }
     return json.data;
   };
 
   const promise = execute();
   if (dedupeKey) {
-    inflightGetRequests.set(dedupeKey, promise);
-    promise.finally(() => {
+    const cleanup = () => {
       if (inflightGetRequests.get(dedupeKey) === promise) {
         inflightGetRequests.delete(dedupeKey);
       }
-    });
+    };
+    inflightGetRequests.set(dedupeKey, promise);
+    promise.then(cleanup, cleanup);
   }
 
   return promise;
@@ -133,6 +237,8 @@ export const mailApi = {
     request<FetchMailsResult>('/mails/fetch', { method: 'POST', body: JSON.stringify(data) }),
   fetchNew: (data: { account_id: number; mailbox: string; proxy_id?: number }) =>
     request<MailMessage | null>('/mails/fetch-new', { method: 'POST', body: JSON.stringify(data) }),
+  unified: (params?: { page?: number; pageSize?: number }) =>
+    request<PaginatedResponse<MailMessage>>(`/mails/unified?${qs(params)}`),
   recent: (params?: { limit?: number }) =>
     request<MailMessage[]>(`/mails/recent?${qs(params)}`),
   refreshRecent: (data?: { limit?: number; proxy_id?: number }) =>
@@ -164,11 +270,31 @@ export const proxyApi = {
 };
 
 export const proxyKernelApi = {
-  status: () => request<ProxyKernelStatus>('/proxy-kernel'),
+  status: () => request<ProxyKernelStatus>('/proxy-kernel/status'),
   download: () => request<ProxyKernelStatus>('/proxy-kernel/download', { method: 'POST', body: JSON.stringify({}) }),
   start: (data: { sourceKey: string; sourceUrl?: string; sourceLabel?: string; mixedPort?: number; socksPort?: number; httpPort?: number }) =>
     request<ProxyKernelStatus>('/proxy-kernel/start', { method: 'POST', body: JSON.stringify(data) }),
   stop: () => request<ProxyKernelStatus>('/proxy-kernel/stop', { method: 'POST', body: JSON.stringify({}) }),
+  select: (data: { groupName: string; target: string }) =>
+    request<ProxyKernelStatus>('/proxy-kernel/select', { method: 'POST', body: JSON.stringify(data) }),
+  testOpenAi: (data: { groupName: string; target: string }) =>
+    request<{ ok: boolean; groupName: string; target: string; original: string; message: string }>('/proxy-kernel/test-openai', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const crsApi = {
+  status: () => request<CrsRelayStatus>('/crs/status'),
+  update: (data: {
+    enabled?: boolean;
+    name?: string;
+    upstreamBaseUrl?: string;
+    upstreamApiKey?: string;
+    publicApiKey?: string;
+    defaultModel?: string;
+    timeoutMs?: number;
+    enabledSources?: Array<'oauth' | 'token_api' | 'ai_api' | 'manual'>;
+  }) => request<CrsRelayStatus>('/crs/config', { method: 'PUT', body: JSON.stringify(data) }),
+  rotateKey: () => request<CrsRelayStatus>('/crs/rotate-key', { method: 'POST', body: JSON.stringify({}) }),
+  test: () => request<CrsRelayTestResult>('/crs/test', { method: 'POST', body: JSON.stringify({}) }),
 };
 
 export const dashboardApi = {
@@ -199,8 +325,18 @@ export const tagApi = {
 };
 
 export const oauthApi = {
+  status: () =>
+    request<OAuthProviderStatus>('/oauth/status'),
+  linuxDoAuthorize: () =>
+    request<{ url: string; state: string }>('/oauth/linuxdo/authorize', { method: 'POST', body: JSON.stringify({}) }),
   openaiAuthorize: () =>
     request<{ url: string; state: string }>('/oauth/openai/authorize', { method: 'POST', body: JSON.stringify({}) }),
+  openaiLaunch: () =>
+    request<OpenAILaunchAuthorizeResult>('/oauth/openai/launch', { method: 'POST', body: JSON.stringify({}) }),
+  openaiResetSession: () =>
+    request<{ reset: boolean; profileDir: string }>('/oauth/openai/reset-session', { method: 'POST', body: JSON.stringify({}) }),
+  openaiResult: (state: string) =>
+    request<OpenAIOAuthResult>(`/oauth/openai/result?${qs({ state })}`),
   googleAuthorize: (data: { client_id?: string; client_secret?: string; login_hint?: string; scope?: string; prompt?: string }) =>
     request<GoogleOAuthAuthorizeResult>('/oauth/google/authorize', { method: 'POST', body: JSON.stringify(data) }),
 };
@@ -213,6 +349,12 @@ export const integrationApi = {
     request<GitHubIntegrationData>('/integrations/github/sync', { method: 'POST' }),
   disconnectGitHub: () =>
     request<{ disconnected: boolean }>('/integrations/github', { method: 'DELETE' }),
+
+  getLinuxDo: () => request<LinuxDoIntegrationData>('/integrations/linuxdo'),
+  syncLinuxDo: () =>
+    request<LinuxDoIntegrationData>('/integrations/linuxdo/sync', { method: 'POST' }),
+  disconnectLinuxDo: () =>
+    request<{ disconnected: boolean }>('/integrations/linuxdo', { method: 'DELETE' }),
 
   getCloudflare: () => request<CloudflareIntegrationData>('/integrations/cloudflare'),
   connectCloudflare: (token: string) =>
@@ -260,6 +402,23 @@ export const integrationApi = {
       method: 'POST',
       body: JSON.stringify({ subscriptionIds }),
     }),
+  analyzeMiSubWithAi: (data: { accountId: number; goal?: string }) =>
+    request<MiSubAiAnalysis>('/integrations/misub/ai/analyze', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getMiSubAiInspection: () =>
+    request<MiSubAiInspectionState>('/integrations/misub/ai/inspection'),
+  updateMiSubAiInspection: (data: Partial<MiSubAiInspectionConfig>) =>
+    request<MiSubAiInspectionState>('/integrations/misub/ai/inspection', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  runMiSubAiInspection: () =>
+    request<MiSubAiInspectionState>('/integrations/misub/ai/inspection/run', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
   disconnectMiSub: () =>
     request<{ disconnected: boolean }>('/integrations/misub', { method: 'DELETE' }),
 
@@ -306,17 +465,27 @@ export const aiApi = {
     request<AiThread[]>(`/ai/threads?${qs({ account_id: accountId })}`),
   getMessages: (threadId: number) =>
     request<AiMessage[]>(`/ai/threads/${threadId}/messages`),
+  updateThread: (threadId: number, data: { title: string }) =>
+    request<AiThread>(`/ai/threads/${threadId}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteThread: (threadId: number) =>
     request<{ deleted: boolean }>(`/ai/threads/${threadId}`, { method: 'DELETE' }),
-  chat: (accountId: number, data: { thread_id?: number | null; message: string }) =>
+  clearThreads: (accountId: number) =>
+    request<{ deleted: number }>(`/ai/accounts/${accountId}/threads`, { method: 'DELETE' }),
+  chat: (accountId: number, data: { thread_id?: number | null; message: string; runtime_context?: AiRuntimeContext }) =>
     request<AiChatResult>(`/ai/accounts/${accountId}/chat`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const newspaperApi = {
+  health: () =>
+    request<NewspaperHealth>('/newspaper/health'),
   briefing: (params?: { refresh?: boolean; limit?: number }) =>
     request<NewspaperBriefing>(`/newspaper/briefing?${qs(params)}`),
-  article: (params: { url: string; source?: string; sourceUrl?: string; publishedAt?: string; title?: string; titleZh?: string; summary?: string; summaryZh?: string }) =>
+  article: (params: { url: string; source?: string; sourceUrl?: string; commentUrl?: string; publishedAt?: string; title?: string; titleZh?: string; summary?: string; summaryZh?: string }) =>
     request<NewspaperArticleDetail>(`/newspaper/article?${qs(params)}`),
+  insight: (data: { url: string; source?: string; sourceUrl?: string; commentUrl?: string; publishedAt?: string; title?: string; titleZh?: string; summary?: string; summaryZh?: string; accountId?: number | null }) =>
+    request<NewspaperAiInsight>('/newspaper/insight', { method: 'POST', body: JSON.stringify(data) }),
+  briefingInsight: (data?: { accountId?: number | null; limit?: number; refresh?: boolean; query?: string }) =>
+    request<NewspaperBriefingAiInsight>('/newspaper/briefing-insight', { method: 'POST', body: JSON.stringify(data || {}) }),
 };
 
 export const tokenApi = {
@@ -331,6 +500,46 @@ export const tokenApi = {
     request<TokenAccountView>(`/tokens/accounts/${id}/sync`, { method: 'POST' }),
   syncAll: () =>
     request<TokenAccountView[]>('/tokens/sync', { method: 'POST' }),
+  autoSync: () =>
+    request<{
+      running: boolean;
+      synced: number;
+      failed: number;
+      skipped: number;
+      recoveryTriggered: boolean;
+      recoveryMessage?: string;
+      codexAutoSwitch?: CodexDesktopActivationResult | CodexDesktopAutoSwitchDeferred | { error: string } | null;
+      delayedAccounts: number[];
+      pausedAccounts: number[];
+      accounts: TokenAccountView[];
+    }>('/tokens/auto-sync', { method: 'POST' }),
+  importCodexFree: (data?: { directory?: string; mode?: 'skip' | 'upsert' }) =>
+    request<CodexFreeImportResult>('/tokens/codex/free/import', { method: 'POST', body: JSON.stringify(data || {}) }),
+  };
+
+export const codexApi = {
+  status: () => request<CodexDesktopState>('/codex/desktop/status'),
+  activate: (data: { tokenAccountId: number; launch?: boolean }) =>
+    request<CodexDesktopActivationResult>('/codex/desktop/activate', { method: 'POST', body: JSON.stringify(data) }),
+  rotate: (data: { strategy: 'next' | 'best'; launch?: boolean }) =>
+    request<CodexDesktopActivationResult>('/codex/desktop/rotate', { method: 'POST', body: JSON.stringify(data) }),
+  autoSwitchCheck: () =>
+    request<CodexDesktopState & { autoSwitch: CodexDesktopActivationResult | CodexDesktopAutoSwitchDeferred | null }>('/codex/desktop/auto-switch/check', { method: 'POST' }),
+  restore: (activationEventId: number) =>
+    request<{ status: CodexDesktopState['status']; event: CodexDesktopActivationResult['event'] }>('/codex/desktop/restore', {
+      method: 'POST',
+      body: JSON.stringify({ activationEventId }),
+    }),
+  getSettings: () => request<CodexDesktopSettings>('/codex/settings'),
+  updateSettings: (data: Partial<CodexDesktopSettings>) =>
+    request<CodexDesktopSettings>('/codex/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  history: (rangeDays = 30) => request<CodexUsageHistory>(`/codex/usage/history?${qs({ rangeDays })}`),
+};
+
+export const openTeamsApi = {
+  status: () => request<OpenTeamsStatus>('/openteams/status'),
+  start: () => request<OpenTeamsStatus>('/openteams/start', { method: 'POST', body: JSON.stringify({}) }),
+  stop: () => request<OpenTeamsStatus>('/openteams/stop', { method: 'POST', body: JSON.stringify({}) }),
 };
 
 export const osApi = {
@@ -355,4 +564,70 @@ export const osApi = {
     request<PersonalMemoryView>(`/os/memory/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMemory: (id: number) =>
     request<{ deleted: boolean }>(`/os/memory/${id}`, { method: 'DELETE' }),
+  aiManageMemory: (data?: { accountId?: number | null; focus?: string }) =>
+    request<PersonalMemoryAiPlan>('/os/memory/ai-manage', { method: 'POST', body: JSON.stringify(data || {}) }),
+  applyAiMemoryPlan: (data: { suggestions: PersonalMemoryAiSuggestion[] }) =>
+    request<{ applied: number; memory: PersonalMemoryView[] }>('/os/memory/ai-apply', { method: 'POST', body: JSON.stringify(data) }),
+  aiManageAccounts: (data?: { accountId?: number | null; focus?: string }) =>
+    request<PersonalAccountAiPlan>('/os/accounts/ai-manage', { method: 'POST', body: JSON.stringify(data || {}) }),
+  applyAiAccountPlan: (data: { suggestions: PersonalAccountAiSuggestion[] }) =>
+    request<{ applied: number; accounts: Account[] }>('/os/accounts/ai-apply', { method: 'POST', body: JSON.stringify(data) }),
+  aiManageProxies: (data?: { accountId?: number | null; focus?: string }) =>
+    request<PersonalProxyAiPlan>('/os/proxies/ai-manage', { method: 'POST', body: JSON.stringify(data || {}) }),
+  applyAiProxyPlan: (data: { suggestions: PersonalProxyAiSuggestion[] }) =>
+    request<{ applied: number; proxies: Proxy[] }>('/os/proxies/ai-apply', { method: 'POST', body: JSON.stringify(data) }),
+  aiManageTokens: (data?: { accountId?: number | null; focus?: string }) =>
+    request<PersonalTokenAiPlan>('/os/tokens/ai-manage', { method: 'POST', body: JSON.stringify(data || {}) }),
+  applyAiTokenPlan: (data: { suggestions: PersonalTokenAiSuggestion[] }) =>
+    request<{ applied: number; accounts: TokenAccountView[] }>('/os/tokens/ai-apply', { method: 'POST', body: JSON.stringify(data) }),
+  getMemoryIngestion: () => request<PersonalMemoryIngestionState>('/os/memory/ingestion'),
+  updateMemoryIngestion: (data: { enabled?: boolean; accountId?: number | null; intervalHours?: number; focus?: string }) =>
+    request<PersonalMemoryIngestionState>('/os/memory/ingestion', { method: 'POST', body: JSON.stringify(data) }),
+  runMemoryIngestion: () =>
+    request<PersonalMemoryIngestionState>('/os/memory/ingestion/run', { method: 'POST', body: JSON.stringify({}) }),
+  getAgentAutonomyState: () => request<AgentAutonomyState>('/os/agent/autonomy'),
+  updateAgentAutonomyConfig: (data: {
+    enabled?: boolean;
+    intervalHours?: number;
+    memoryIngestionEnabled?: boolean;
+    ruleAutomationEnabled?: boolean;
+    profileLearningEnabled?: boolean;
+    skillLearningEnabled?: boolean;
+    backupEnabled?: boolean;
+    backupDir?: string;
+    backupRetentionCount?: number;
+  }) => request<AgentAutonomyState>('/os/agent/autonomy', { method: 'POST', body: JSON.stringify(data) }),
+  runAgentAutonomyNow: () =>
+    request<AgentAutonomyState>('/os/agent/autonomy/run', { method: 'POST', body: JSON.stringify({}) }),
+  getAgentRuntime: () => request<AgentRuntimeView>('/os/agent/runtime'),
+  getAgentMemoryState: () => request<AgentRuntimeMemoryState>('/os/agent/memory'),
+  getAgentActivityState: () => request<AgentRuntimeActivityState>('/os/agent/activity'),
+  listAgentEvents: (limit = 80) => request<AgentRuntimeEvent[]>(`/os/agent/events?${qs({ limit })}`),
+  createAgentEvent: (data: {
+    layer?: AgentRuntimeEvent['layer'];
+    scope?: AgentRuntimeEvent['scope'];
+    source: string;
+    eventType: string;
+    title: string;
+    detail?: string;
+    content?: Record<string, any>;
+    confidence?: number;
+    shared?: boolean;
+    originRefs?: string[];
+  }) => request<AgentRuntimeEvent>('/os/agent/events', { method: 'POST', body: JSON.stringify(data) }),
+  updateAgentExecutionMode: (mode: 'observe_only' | 'guided_execute' | 'full_execute') =>
+    request<AgentRuntimeView>('/os/agent/mode', { method: 'POST', body: JSON.stringify({ mode }) }),
+  compactAgentMemory: () =>
+    request<AgentRuntimeMemoryState>('/os/agent/memory/compact', { method: 'POST', body: JSON.stringify({}) }),
+  reportAgentIncident: (data: AgentIncidentReportInput) =>
+    request<AgentIncidentReportResult>('/os/agent/incidents', { method: 'POST', body: JSON.stringify(data) }),
+  listAgentProfile: () => request<AgentProfileMemory[]>('/os/agent/profile'),
+  upsertAgentProfile: (data: {
+    key: string;
+    value: string;
+    category?: AgentProfileMemory['category'];
+    confidence?: number;
+    source?: string;
+  }) => request<AgentProfileMemory>('/os/agent/profile', { method: 'POST', body: JSON.stringify(data) }),
+  listAgentSkills: (limit = 20) => request<AgentSkillJournalView[]>(`/os/agent/skills?${qs({ limit })}`),
 };

@@ -1,0 +1,105 @@
+---
+title: "openteams Documentation"
+description: "openteams brings more than a productivity boost. It introduces a new way to work with AI as a team."
+sidebarTitle: "Home"
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+![](images/en/openteams_page.png)
+
+## What is openteams?
+
+openteams is an open-source, general-purpose multi-agent collaboration app built around group chat. It lets you create and direct your own AI team to handle all kinds of tasks.
+
+openteams includes the `openteams-cli` agent out of the box and also supports local agents such as Claude Code, Codex, and OpenCode.
+You can create or import AI members, assign them different models and skills, and build a focused AI team for more complex work.
+
+## Why choose openteams?
+
+<CardGroup cols={2}>
+  <Card title="Context Sharing" icon="link">
+    All agents work in the same conversation space, automatically sharing project background, discussion history, and code changes.
+  </Card>
+
+  <Card title="@Mention Handoffs" icon="at">
+    Agents can `@mention` one another to hand work off and form a smooth collaboration chain.
+  </Card>
+
+  <Card title="One Person, One Team" icon="users">
+    One person can direct a complete AI delivery team: designers, developers, reviewers, testers, and any other roles you want to define.
+  </Card>
+
+  <Card title="Productivity Multiplied" icon="bolt">
+    Parallel execution, automatic task routing, specialist roles, and local execution help boost delivery speed while keeping data private.
+  </Card>
+
+  <Card title="Mode Switching" icon="gear">
+    Switch cleanly between discussion mode and work mode so ideas can turn into execution without friction.
+  </Card>
+
+  <Card title="Ready to Use" icon="plug">
+    Built-in AI members, preset teams, and a large skill library are available out of the box and can be combined however you like.
+  </Card>
+</CardGroup>
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="book" href="/getting-started">
+    A complete guide to creating sessions, managing AI members, and starting collaborative work
+  </Card>
+
+  <Card title="Configure Agent Models" icon="robot" href="/supported-coding-agents">
+    Configure and use openteams CLI, Claude Code, Gemini CLI, Codex, and other agents
+  </Card>
+</CardGroup>

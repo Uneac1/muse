@@ -1,0 +1,71 @@
+use std::path::PathBuf;
+
+use thiserror::Error;
+
+pub mod editor;
+pub(crate) mod preset_loader;
+mod versions;
+
+pub use editor::EditorOpenError;
+
+pub const DEFAULT_PR_DESCRIPTION_PROMPT: &str = r#"Update the PR that was just created with a better title and description.
+The PR number is #{pr_number} and the URL is {pr_url}.
+
+Analyze the changes in this branch and write:
+1. A concise, descriptive title that summarizes the changes, postfixed with "(openteams)"
+2. A detailed description that explains:
+   - What changes were made
+   - Why they were made (based on the task context)
+   - Any important implementation details
+   - At the end, include a note: "This PR was written using [openteams](https://openteams.com)"
+
+Use the appropriate CLI tool to update the PR (gh pr edit for GitHub, az repos pr update for Azure DevOps)."#;
+
+pub const DEFAULT_COMMIT_REMINDER_PROMPT: &str = "There are uncommitted changes. Please stage and commit them now with a descriptive commit message.";
+
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+}
+
+pub type Config = versions::v9::Config;
+pub type NotificationConfig = versions::v9::NotificationConfig;
+pub type EditorConfig = versions::v9::EditorConfig;
+pub type ThemeMode = versions::v9::ThemeMode;
+pub type SoundFile = versions::v9::SoundFile;
+pub type EditorType = versions::v9::EditorType;
+pub type GitHubConfig = versions::v9::GitHubConfig;
+pub type UiLanguage = versions::v9::UiLanguage;
+pub type ShowcaseState = versions::v9::ShowcaseState;
+pub type SendMessageShortcut = versions::v9::SendMessageShortcut;
+pub type ChatMemberPreset = versions::v9::ChatMemberPreset;
+pub type ChatTeamPreset = versions::v9::ChatTeamPreset;
+pub type ChatPresetsConfig = versions::v9::ChatPresetsConfig;
+pub type ChatBubbleFontSize = versions::v9::ChatBubbleFontSize;
+pub type ChatCompressionConfig = versions::v9::ChatCompressionConfig;
+
+/// Will always return config, trying old schemas or eventually returning default
+pub async fn load_config_from_file(config_path: &PathBuf) -> Config {
+    match std::fs::read_to_string(config_path) {
+        Ok(raw_config) => Config::from(raw_config),
+        Err(_) => {
+            tracing::info!("No config file found, creating one");
+            Config::default()
+        }
+    }
+}
+
+/// Saves the config to the given path
+pub async fn save_config_to_file(
+    config: &Config,
+    config_path: &PathBuf,
+) -> Result<(), ConfigError> {
+    let raw_config = serde_json::to_string_pretty(config)?;
+    std::fs::write(config_path, raw_config)?;
+    Ok(())
+}

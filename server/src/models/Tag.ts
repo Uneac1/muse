@@ -40,6 +40,26 @@ export class TagModel {
     `).all(accountId) as Tag[];
   }
 
+  getTagsByAccountIds(accountIds: number[]): Record<number, Tag[]> {
+    const ids = [...new Set(accountIds.filter((id) => Number.isFinite(id) && id > 0))];
+    if (!ids.length) return {};
+
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT at.account_id as account_id, t.*
+      FROM account_tags at
+      JOIN tags t ON t.id = at.tag_id
+      WHERE at.account_id IN (${placeholders})
+      ORDER BY at.account_id, t.name
+    `).all(...ids) as Array<Tag & { account_id: number }>;
+
+    return rows.reduce<Record<number, Tag[]>>((acc, row) => {
+      const { account_id, ...tag } = row;
+      (acc[account_id] ||= []).push(tag);
+      return acc;
+    }, {});
+  }
+
   setAccountTags(accountId: number, tagIds: number[]): void {
     const del = db.prepare('DELETE FROM account_tags WHERE account_id = ?');
     const ins = db.prepare('INSERT OR IGNORE INTO account_tags (account_id, tag_id) VALUES (?, ?)');

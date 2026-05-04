@@ -1,0 +1,11 @@
+[mcp_servers.stitch]
+command = "python"
+args = [
+    'C:\Users\1\Desktop\muse\Muse\scripts\stitch_mcp_proxy.py',
+]
+startup_timeout_ms = 20000
+
+[mcp_servers.stitch.env]
+GOOGLE_CLOUD_PROJECT = "ymail-493905"
+CLOUDSDK_CONFIG = 'C:\Users\1\AppData\Local\Temp\gcloud-config'
+PATH = 'C:\Users\1\AppData\Local\Temp\CloudSDK\google-cloud-sdk\bin;C:\Program Files\nodejs;C:\Windows\System32;C:\Windows'

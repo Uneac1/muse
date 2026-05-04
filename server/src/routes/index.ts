@@ -13,6 +13,9 @@ import { tokenRoutes } from './tokens';
 import { newspaperRoutes } from './newspaper';
 import { osRoutes } from './os';
 import { proxyKernelRoutes } from './proxy-kernel';
+import { codexRoutes } from './codex';
+import { openTeamsRoutes } from './openteams';
+import { crsRoutes } from './crs';
 
 const router = new Router({ prefix: '/api' });
 
@@ -30,5 +33,8 @@ router.use('/tokens', tokenRoutes.routes(), tokenRoutes.allowedMethods());
 router.use('/newspaper', newspaperRoutes.routes(), newspaperRoutes.allowedMethods());
 router.use('/os', osRoutes.routes(), osRoutes.allowedMethods());
 router.use('/proxy-kernel', proxyKernelRoutes.routes(), proxyKernelRoutes.allowedMethods());
+router.use('/codex', codexRoutes.routes(), codexRoutes.allowedMethods());
+router.use('/openteams', openTeamsRoutes.routes(), openTeamsRoutes.allowedMethods());
+router.use('/crs', crsRoutes.routes(), crsRoutes.allowedMethods());
 
 export default router;

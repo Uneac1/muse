@@ -16,4 +16,5 @@ exports.mailRoutes.post('/send', ctrl.send);
 exports.mailRoutes.get('/search', ctrl.search);
 exports.mailRoutes.delete('/clear', ctrl.clear);
 exports.mailRoutes.get('/cached', ctrl.cached);
+exports.mailRoutes.get('/unified', ctrl.unified.bind(ctrl));
 //# sourceMappingURL=mails.js.map

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Muse UX Preview</title>
+    <style>
+      :root {
+        --bg: #f4f7f6;
+        --panel: #ffffff;
+        --panel-soft: #f8fbfa;
+        --border: #dbe5e2;
+        --text: #16211d;
+        --muted: #62726c;
+        --primary: #0f766e;
+        --primary-soft: #dff5f1;
+        --danger: #dc2626;
+        --danger-soft: #fee2e2;
+        --warning-soft: #fff4d6;
+        --shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(15,118,110,0.08), transparent 28%),
+          linear-gradient(180deg, #f8fbfa 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .page {
+        width: min(1200px, calc(100vw - 32px));
+        margin: 24px auto 48px;
+      }
+
+      .section-title {
+        margin: 28px 0 14px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.4fr 0.8fr;
+        gap: 18px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .main-hero {
+        padding: 26px;
+        background: linear-gradient(180deg, #ffffff 0%, #f4fbf9 100%);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      h1, h2, h3, p { margin: 0; }
+      h1 { margin-top: 14px; font-size: 32px; line-height: 1.15; }
+      .desc { margin-top: 10px; color: var(--muted); line-height: 1.6; }
+
+      .hero-meta {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .meta-box {
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--panel-soft);
+      }
+
+      .meta-box strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 24px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .btn {
+        padding: 12px 16px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .btn.primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+      }
+
+      .status-card {
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-self: flex-start;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .metric {
+        padding: 18px;
+      }
+
+      .metric .label {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .metric .value {
+        margin-top: 10px;
+        font-size: 30px;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .panel {
+        padding: 22px;
+      }
+
+      .list {
+        display: grid;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .mail {
+        padding: 16px 18px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--panel-soft);
+      }
+
+      .mail-top, .mail-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .mail-meta {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 14px;
+        flex-wrap: wrap;
+      }
+
+      .mail-preview {
+        margin-top: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .hint {
+        margin-top: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: var(--warning-soft);
+        color: #7a5a00;
+        font-size: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .hero, .grid, .metrics, .hero-meta {
+          grid-template-columns: 1fr;
+        }
+
+        h1 { font-size: 26px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="section-title">Dashboard 优化预览</div>
+      <section class="hero">
+        <div class="card main-hero">
+          <div class="eyebrow">Today Focus</div>
+          <h1>现在先处理异常账户，而不是先看统计面板</h1>
+          <p class="desc">首屏只回答一件事：当前系统是否健康。如果不健康，直接给出原因、范围和入口；统计与分布图全部后移。</p>
+          <div class="hero-meta">
+            <div class="meta-box">
+              <span>异常账户</span>
+              <strong>6</strong>
+              <small>优先检查授权与网络</small>
+            </div>
+            <div class="meta-box">
+              <span>待刷新 Token</span>
+              <strong>14</strong>
+              <small>60 天未刷新</small>
+            </div>
+            <div class="meta-box">
+              <span>在线代理</span>
+              <strong>18 / 21</strong>
+              <small>网络侧整体可用</small>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary">去处理异常</button>
+            <button class="btn">刷新数据</button>
+          </div>
+        </div>
+        <aside class="card status-card">
+          <div>
+            <div class="status-pill">需要处理</div>
+            <h2 style="margin-top: 14px; font-size: 24px;">异常已影响部分账户同步</h2>
+            <p class="desc" style="margin-top: 10px;">把“状态判断”做成单独右侧卡，避免刷新按钮、彩色统计卡、图表同时争抢视线。</p>
+          </div>
+          <p style="color: var(--muted); font-size: 14px;">建议右侧保持固定高度，不堆叠第二个高强调模块。</p>
+        </aside>
+      </section>
+
+      <section class="metrics">
+        <div class="card metric">
+          <div class="label">邮箱健康</div>
+          <div class="value">84%</div>
+          <p class="desc">活跃账号正常，少量授权异常</p>
+        </div>
+        <div class="card metric">
+          <div class="label">缓存邮件量</div>
+          <div class="value">12,480</div>
+          <p class="desc">统一展示体量，不单独拆成第二排统计</p>
+        </div>
+        <div class="card metric">
+          <div class="label">代理健康</div>
+          <div class="value">18</div>
+          <p class="desc">在线代理作为证据，不再作为首焦点</p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card panel">
+          <h3>Recent Mail</h3>
+          <p class="desc" style="margin-top: 8px;">保留最近发生了什么，但位置下降到第二屏内容区。</p>
+          <div class="list">
+            <div class="mail">
+              <div class="mail-top">
+                <strong>GitHub 登录提醒</strong>
+                <span style="color: var(--muted);">10:42</span>
+              </div>
+              <div class="mail-meta">
+                <span>security@github.com</span>
+                <span>work@domain.com</span>
+                <span>Inbox</span>
+              </div>
+              <div class="mail-preview">新的安全登录提醒已送达。建议优先检查最近访问来源与地区变化。</div>
+            </div>
+          </div>
+        </div>
+        <div class="card panel">
+          <h3>Quick Actions</h3>
+          <p class="desc" style="margin-top: 8px;">动作保留，但不再与首屏主任务并列竞争。</p>
+        </div>
+      </section>
+
+      <div class="section-title">Inbox 优化预览</div>
+      <section class="card panel">
+        <div class="eyebrow">Unified Mail</div>
+        <h2 style="margin-top: 14px; font-size: 28px;">统一收件箱只保留“最近收到了什么”和“现在要不要处理”</h2>
+        <p class="desc" style="margin-top: 10px;">压缩说明文字，把判断线索前置。邮件列表继续保持干净，但更强调扫描效率。</p>
+
+        <div class="metrics" style="margin-top: 20px;">
+          <div class="card metric">
+            <div class="label">新近邮件</div>
+            <div class="value">48</div>
+            <p class="desc">优先查看最近 10 封</p>
+          </div>
+          <div class="card metric">
+            <div class="label">覆盖账号</div>
+            <div class="value">11</div>
+            <p class="desc">当前列表覆盖到的邮箱数</p>
+          </div>
+          <div class="card metric">
+            <div class="label">最近同步</div>
+            <div class="value" style="font-size: 22px;">14:12</div>
+            <p class="desc">10 秒自动刷新一次</p>
+          </div>
+        </div>
+
+        <div class="hint">处理提示：最近 30 分钟内有新增邮件，建议先看前 10 封；正文收起态最多保留 2 行，提高列表扫描速度。</div>
+
+        <div class="list">
+          <div class="mail">
+            <div class="mail-top">
+              <strong>OpenAI API billing alert</strong>
+              <span style="color: var(--muted);">14:08</span>
+            </div>
+            <div class="mail-meta">
+              <span>alerts@openai.com</span>
+              <span>ops@domain.com</span>
+              <span>Inbox</span>
+            </div>
+            <div class="mail-preview">检测到账单阈值接近上限。建议先确认本周调用趋势，再决定是否追加额度或限制某些任务流量。</div>
+          </div>
+          <div class="mail">
+            <div class="mail-top">
+              <strong>Microsoft sign-in code</strong>
+              <span style="color: var(--muted);">13:57</span>
+            </div>
+            <div class="mail-meta">
+              <span>account-security-noreply@accountprotection.microsoft.com</span>
+              <span>team@domain.com</span>
+              <span>Junk</span>
+            </div>
+            <div class="mail-preview">验证码邮件需要高扫描效率，不需要在首屏展示过长说明文字；主题、来源、时间比长段落更重要。</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+  </html>

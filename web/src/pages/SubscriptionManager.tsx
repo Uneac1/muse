@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ChevronDown,
   ChevronUp,
   Copy,
+  Bot,
   ExternalLink,
   Globe,
   KeyRound,
@@ -14,15 +15,17 @@ import {
   Plus,
   RefreshCw,
   Save,
-  Search,
   Settings2,
   ShieldCheck,
+  Sparkles,
   Trash2,
+  Wand2,
   Waypoints,
 } from 'lucide-react';
-import { integrationApi } from '../lib/api';
+import { SearchBox, SectionCard } from '../components/ui/patterns';
+import { aiApi, integrationApi } from '../lib/api';
 import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
-import type { MiSubIntegrationData, MiSubProfile, MiSubSettings, MiSubSubscription, MiSubUserInfo } from '../types';
+import type { AiAccount, MiSubAiAnalysis, MiSubAiInspectionState, MiSubIntegrationData, MiSubProfile, MiSubSettings, MiSubSubscription, MiSubUserInfo } from '../types';
 import { timeAgo } from '../lib/utils';
 
 const DEFAULT_URL = 'https://misub.y130.icu/';
@@ -39,35 +42,7 @@ const emptyState: MiSubIntegrationData = {
 };
 const MISUB_CACHE_KEY = 'muse.integration.misub';
 const cachedMiSub = readIntegrationCache<MiSubIntegrationData>(MISUB_CACHE_KEY);
-
-function SectionCard({ title, sub, action, children }: { title: string; sub?: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          {sub && <p className="text-sm text-muted-foreground">{sub}</p>}
-        </div>
-        {action}
-      </div>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
-  return (
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-border bg-background/70 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-      />
-    </div>
-  );
-}
+const DEFAULT_AI_GOAL = '检查订阅源可用性、过期、流量、重复分组和 OpenAI 路由风险，给出可直接执行的 MiSub 操作建议。';
 
 function formatBytes(value?: number | null) {
   if (value == null || Number.isNaN(value)) return '-';
@@ -125,7 +100,7 @@ function normalizeBaseUrl(url: string) {
 }
 
 export default function SubscriptionManager() {
-  const [activePanel, setActivePanel] = useState<'subscriptions' | 'profiles' | 'settings'>('subscriptions');
+  const [activePanel, setActivePanel] = useState<'subscriptions' | 'profiles' | 'settings' | 'ai'>('subscriptions');
   const [data, setData] = useState<MiSubIntegrationData>(cachedMiSub.value || emptyState);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_URL);
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
@@ -145,6 +120,12 @@ export default function SubscriptionManager() {
   const [baselineMisubs, setBaselineMisubs] = useState<MiSubSubscription[]>([]);
   const [baselineProfiles, setBaselineProfiles] = useState<MiSubProfile[]>([]);
   const [baselineSettings, setBaselineSettings] = useState<MiSubSettings | null>(null);
+  const [aiAccounts, setAiAccounts] = useState<AiAccount[]>([]);
+  const [aiAccountId, setAiAccountId] = useState<number | ''>('');
+  const [aiGoal, setAiGoal] = useState(DEFAULT_AI_GOAL);
+  const [aiInspection, setAiInspection] = useState<MiSubAiInspectionState | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<MiSubAiAnalysis | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
 
   const hydrate = (next: MiSubIntegrationData) => {
     writeIntegrationCache(MISUB_CACHE_KEY, next);
@@ -174,6 +155,27 @@ export default function SubscriptionManager() {
   useEffect(() => {
     if (isIntegrationCacheFresh<MiSubIntegrationData>(MISUB_CACHE_KEY)) return;
     load();
+  }, []);
+
+  const loadAiSurface = async () => {
+    try {
+      const [accounts, inspection] = await Promise.all([
+        aiApi.listAccounts(),
+        integrationApi.getMiSubAiInspection(),
+      ]);
+      const usableAccounts = accounts.filter((account) => account.status !== 'inactive');
+      setAiAccounts(usableAccounts);
+      setAiInspection(inspection);
+      setAiGoal(inspection.config.goal || DEFAULT_AI_GOAL);
+      const preferredId = inspection.config.accountId || usableAccounts[0]?.id || '';
+      setAiAccountId(preferredId);
+    } catch (err: any) {
+      toast.error(err.message || '加载 MiSub AI 巡检失败');
+    }
+  };
+
+  useEffect(() => {
+    loadAiSurface();
   }, []);
 
   const dataDirty = useMemo(
@@ -327,6 +329,60 @@ export default function SubscriptionManager() {
     }
   };
 
+  const saveAiInspection = async () => {
+    const accountId = Number(aiAccountId);
+    if (!accountId) {
+      toast.error('请选择 AI 账号');
+      return;
+    }
+    try {
+      setAiBusy(true);
+      const next = await integrationApi.updateMiSubAiInspection({
+        enabled: aiInspection?.config.enabled ?? true,
+        accountId,
+        intervalHours: aiInspection?.config.intervalHours || 12,
+        goal: aiGoal,
+      });
+      setAiInspection(next);
+      toast.success('MiSub AI 巡检配置已保存');
+    } catch (err: any) {
+      toast.error(err.message || '保存 MiSub AI 巡检失败');
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const runAiAnalysis = async () => {
+    const accountId = Number(aiAccountId);
+    if (!accountId) {
+      toast.error('请选择 AI 账号');
+      return;
+    }
+    try {
+      setAiBusy(true);
+      const result = await integrationApi.analyzeMiSubWithAi({ accountId, goal: aiGoal });
+      setAiAnalysis(result);
+      toast.success('MiSub AI 分析完成');
+    } catch (err: any) {
+      toast.error(err.message || 'MiSub AI 分析失败');
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const runAiInspection = async () => {
+    try {
+      setAiBusy(true);
+      const result = await integrationApi.runMiSubAiInspection();
+      setAiInspection(result);
+      toast.success('MiSub AI 巡检已完成');
+    } catch (err: any) {
+      toast.error(err.message || '运行 MiSub AI 巡检失败');
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const updateSubscription = (id: string, patch: Partial<MiSubSubscription>) => {
     setDraftMisubs((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
@@ -408,7 +464,7 @@ export default function SubscriptionManager() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="mx-auto w-full max-w-[1520px] space-y-6 p-4 md:p-6">
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
         <div className="relative p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_32%),radial-gradient(circle_at_left,rgba(59,130,246,0.10),transparent_28%)]" />
@@ -460,6 +516,7 @@ export default function SubscriptionManager() {
               { key: 'subscriptions' as const, label: '订阅源', sub: `${draftMisubs.length} 条`, dirty: dataDirty },
               { key: 'profiles' as const, label: '分组链接', sub: `${draftProfiles.length} 组`, dirty: dataDirty },
               { key: 'settings' as const, label: 'MiSub 设置', sub: settingsDirty ? '有改动' : '已同步', dirty: settingsDirty },
+              { key: 'ai' as const, label: 'AI 巡检', sub: aiInspection?.config.enabled ? '已启用' : '手动分析', dirty: false },
             ].map((panel) => (
               <button
                 key={panel.key}
@@ -494,6 +551,13 @@ export default function SubscriptionManager() {
             )}
             {activePanel === 'settings' && (
               <button onClick={saveSettings} disabled={settingsSaving || !draftSettings || !settingsDirty} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"><Settings2 className="h-4 w-4" />保存设置</button>
+            )}
+            {activePanel === 'ai' && (
+              <>
+                <button onClick={saveAiInspection} disabled={aiBusy || !aiAccountId} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"><Save className="h-4 w-4" />保存巡检</button>
+                <button onClick={runAiAnalysis} disabled={aiBusy || !aiAccountId || !data.connected} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"><Wand2 className="h-4 w-4" />立即分析</button>
+                <button onClick={runAiInspection} disabled={aiBusy || !aiInspection?.config.accountId || !data.connected} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"><Sparkles className="h-4 w-4" />运行巡检</button>
+              </>
             )}
           </div>
         </div>
@@ -762,6 +826,81 @@ export default function SubscriptionManager() {
 
       {activePanel === 'settings' && <SectionCard title="MiSub 设置" sub="这里直接管理 MiSub 的基础输出设置、SubConverter、模板、命名和通知阈值。保存后会直接回写到 MiSub 后台。">
         {!draftSettings ? <div className="rounded-2xl border border-dashed border-border bg-background/40 px-5 py-12 text-center text-sm text-muted-foreground">连接 MiSub 后即可编辑设置</div> : <div className="space-y-4"><div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"><label className="space-y-2"><span className="text-sm font-medium text-foreground">FileName</span><input value={draftSettings.FileName || ''} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, FileName: e.target.value } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label><label className="space-y-2"><span className="text-sm font-medium text-foreground">mytoken</span><input value={draftSettings.mytoken || ''} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, mytoken: e.target.value } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label><label className="space-y-2"><span className="text-sm font-medium text-foreground">profileToken</span><input value={draftSettings.profileToken || ''} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, profileToken: e.target.value } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><label className="space-y-2"><span className="text-sm font-medium text-foreground">subConverter</span><input value={draftSettings.subConverter || ''} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, subConverter: e.target.value } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label><label className="space-y-2"><span className="text-sm font-medium text-foreground">subConfig</span><input value={draftSettings.subConfig || ''} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, subConfig: e.target.value } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label></div><div className="grid grid-cols-1 gap-4 md:grid-cols-4"><label className="flex items-center gap-2 rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground"><input type="checkbox" checked={!!draftSettings.prependSubName} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, prependSubName: e.target.checked } : prev))} className="h-4 w-4 rounded border-border text-primary focus:ring-primary" />前置订阅名</label><label className="space-y-2"><span className="text-sm font-medium text-foreground">到期提醒天数</span><input type="number" value={draftSettings.NotifyThresholdDays ?? 0} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, NotifyThresholdDays: Number(e.target.value) } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label><label className="space-y-2"><span className="text-sm font-medium text-foreground">流量提醒阈值 %</span><input type="number" value={draftSettings.NotifyThresholdPercent ?? 0} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, NotifyThresholdPercent: Number(e.target.value) } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label><div className="rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-muted-foreground"><div>存储模式</div><div className="mt-1 text-base font-semibold text-foreground">{draftSettings.storageType || '-'}</div></div></div><div className="grid grid-cols-1 gap-4 md:grid-cols-3"><label className="flex items-center gap-2 rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground"><input type="checkbox" checked={!!draftSettings.prefixConfig?.enableManualNodes} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, prefixConfig: { ...prev.prefixConfig, enableManualNodes: e.target.checked } } : prev))} className="h-4 w-4 rounded border-border text-primary focus:ring-primary" />手动节点前缀</label><label className="flex items-center gap-2 rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground"><input type="checkbox" checked={!!draftSettings.prefixConfig?.enableSubscriptions} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, prefixConfig: { ...prev.prefixConfig, enableSubscriptions: e.target.checked } } : prev))} className="h-4 w-4 rounded border-border text-primary focus:ring-primary" />订阅源前缀</label><label className="space-y-2"><span className="text-sm font-medium text-foreground">manualNodePrefix</span><input value={draftSettings.prefixConfig?.manualNodePrefix || ''} onChange={(e) => setDraftSettings((prev) => (prev ? { ...prev, prefixConfig: { ...prev.prefixConfig, manualNodePrefix: e.target.value } } : prev))} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" /></label></div><details className="rounded-xl border border-border/70 bg-background/60 p-3"><summary className="cursor-pointer text-sm font-medium text-foreground">查看设置完整 JSON</summary><pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all text-xs text-muted-foreground">{JSON.stringify(draftSettings, null, 2)}</pre></details></div>}
+      </SectionCard>}
+
+      {activePanel === 'ai' && <SectionCard title="MiSub AI 巡检" sub="接入已有 AI 分析、定时巡检和巡检历史。AI 只给建议，不会自动修改订阅；执行修改仍在订阅源和分组面板完成。">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.8fr_0.8fr_1.4fr]">
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">AI 账号</span>
+              <select value={aiAccountId} onChange={(e) => setAiAccountId(e.target.value ? Number(e.target.value) : '')} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20">
+                <option value="">选择 AI 账号</option>
+                {aiAccounts.map((account) => <option key={account.id} value={account.id}>{account.name} · {account.provider} · {account.model || '默认模型'}</option>)}
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">巡检间隔</span>
+              <input type="number" min={1} value={aiInspection?.config.intervalHours ?? 12} onChange={(e) => setAiInspection((prev) => prev ? { ...prev, config: { ...prev.config, intervalHours: Number(e.target.value) } } : prev)} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground">
+              <input type="checkbox" checked={!!aiInspection?.config.enabled} onChange={(e) => setAiInspection((prev) => prev ? { ...prev, config: { ...prev.config, enabled: e.target.checked } } : prev)} className="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+              启用后台 AI 巡检
+            </label>
+          </div>
+          <label className="space-y-2 block">
+            <span className="text-sm font-medium text-foreground">AI 巡检目标</span>
+            <textarea value={aiGoal} onChange={(e) => setAiGoal(e.target.value)} rows={3} className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
+          </label>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-border bg-background/50 p-4 text-sm">
+              <div className="text-muted-foreground">配置状态</div>
+              <div className="mt-1 font-semibold text-foreground">{aiInspection?.config.enabled ? '后台巡检已启用' : '仅手动分析'}</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-background/50 p-4 text-sm">
+              <div className="text-muted-foreground">上次运行</div>
+              <div className="mt-1 font-semibold text-foreground">{aiInspection?.config.lastRunAt ? timeAgo(aiInspection.config.lastRunAt) : '-'}</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-background/50 p-4 text-sm">
+              <div className="text-muted-foreground">下次运行</div>
+              <div className="mt-1 font-semibold text-foreground">{aiInspection?.config.nextRunAt ? timeAgo(aiInspection.config.nextRunAt) : '-'}</div>
+            </div>
+          </div>
+          {!data.connected && <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">MiSub 未连接，AI 巡检需要先同步真实订阅数据。</div>}
+          {aiAccounts.length === 0 && <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">没有可用 AI 账号，请先到 AI 账号池添加或修复账号。</div>}
+
+          {[aiAnalysis, aiInspection?.latestRun].filter(Boolean).map((result: any, index) => (
+            <div key={`${result.id || result.summary || index}`} className="rounded-2xl border border-border bg-background/50 p-4">
+              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground"><Bot className="h-4 w-4" />{index === 0 && aiAnalysis ? '手动 AI 分析' : '最近后台巡检'}</div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.summary || result.error || '暂无摘要'}</p>
+                </div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{result.status || result.sourceMode || 'ai'}</span>
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div>
+                  <div className="mb-2 text-sm font-medium text-foreground">发现</div>
+                  <div className="space-y-2">
+                    {(result.findings || []).length === 0 ? <div className="text-sm text-muted-foreground">暂无发现</div> : result.findings.map((finding: string, findingIndex: number) => <div key={findingIndex} className="rounded-xl border border-border/70 bg-background/60 px-3 py-2 text-sm text-muted-foreground">{finding}</div>)}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 text-sm font-medium text-foreground">建议动作</div>
+                  <div className="space-y-2">
+                    {(result.actions || []).length === 0 ? <div className="text-sm text-muted-foreground">暂无建议动作</div> : result.actions.map((action: any, actionIndex: number) => <div key={actionIndex} className="rounded-xl border border-border/70 bg-background/60 px-3 py-2 text-sm"><div className="font-medium text-foreground">{action.type}{action.id ? ` · ${action.id}` : ''}</div><div className="mt-1 text-muted-foreground">{action.reason || '无说明'}</div></div>)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {aiInspection?.history?.length ? <details className="rounded-xl border border-border/70 bg-background/60 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">查看巡检历史</summary>
+            <div className="mt-3 space-y-2">
+              {aiInspection.history.slice(0, 8).map((run) => <div key={run.id} className="rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground"><span className="font-medium text-foreground">{run.status}</span> · {run.startedAt ? timeAgo(run.startedAt) : '-'} · {run.summary || run.error || '无摘要'}</div>)}
+            </div>
+          </details> : null}
+        </div>
       </SectionCard>}
     </div>
   );

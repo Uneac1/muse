@@ -15,13 +15,19 @@ async function authMiddleware(ctx, next) {
         return next();
     if (ctx.path === '/api/auth/login' || ctx.path === '/api/auth/check' || ctx.path === '/api/auth/google/authorize')
         return next();
+    if (ctx.path === '/api/oauth/status')
+        return next();
     if (ctx.path === '/api/oauth/openai/authorize')
+        return next();
+    if (ctx.path === '/api/oauth/linuxdo/callback')
         return next();
     if (ctx.path === '/api/oauth/google/callback')
         return next();
     if (ctx.path === '/api/oauth/openai/callback')
         return next();
     if (ctx.path === '/api/auth/google/callback')
+        return next();
+    if (ctx.path.startsWith('/api/crs/v1/'))
         return next();
     if (!ctx.path.startsWith('/api'))
         return next();
@@ -30,7 +36,16 @@ async function authMiddleware(ctx, next) {
     const valid = !!token && (token === passwordToken || (0, adminSession_1.isValidAdminSession)(token));
     if (!valid) {
         ctx.status = 401;
-        ctx.body = { code: 401, data: null, message: 'Unauthorized' };
+        ctx.body = {
+            code: 401,
+            data: null,
+            message: 'Unauthorized',
+            ok: false,
+            error: {
+                code: 'UNAUTHORIZED',
+                message: 'Unauthorized',
+            },
+        };
         return;
     }
     return next();

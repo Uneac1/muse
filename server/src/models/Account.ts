@@ -58,9 +58,10 @@ export class AccountModel {
     }
     const total = (db.prepare(`SELECT COUNT(*) as c FROM accounts ${where}`).get(...params) as any).c;
     const list = db.prepare(`SELECT * FROM accounts ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...params, pageSize, offset) as Account[];
+    const tagsByAccountId = tagModel.getTagsByAccountIds(list.map((acc) => acc.id));
     const listWithTags = list.map(acc => ({
       ...acc,
-      tags: tagModel.getTagsByAccountId(acc.id),
+      tags: tagsByAccountId[acc.id] || [],
     }));
     return { list: listWithTags, total, page, pageSize };
   }
@@ -69,6 +70,10 @@ export class AccountModel {
     const acc = db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Account | undefined;
     if (!acc) return undefined;
     return { ...acc, tags: tagModel.getTagsByAccountId(acc.id) } as any;
+  }
+
+  getByIdBasic(id: number): Account | undefined {
+    return db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Account | undefined;
   }
 
   create(data: Partial<Account>): Account {
@@ -135,6 +140,8 @@ export class AccountModel {
     const duplicates: any[] = [];
     const errors: string[] = [];
 
+    const existingStmt = db.prepare('SELECT id FROM accounts WHERE email = ?');
+
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].split(separator);
       const record: Record<string, string> = {};
@@ -148,7 +155,7 @@ export class AccountModel {
         continue;
       }
 
-      const existing = db.prepare('SELECT id FROM accounts WHERE email = ?').get(record.email);
+      const existing = existingStmt.get(record.email);
       const item = { line: i + 1, ...record };
       if (existing) duplicates.push(item);
       else newItems.push(item);
@@ -177,6 +184,8 @@ export class AccountModel {
       WHERE email = ?
     `);
 
+    const existingStmt = db.prepare('SELECT id FROM accounts WHERE email = ?');
+
     const transaction = db.transaction(() => {
       for (let i = 0; i < lines.length; i++) {
         const parts = lines[i].split(separator);
@@ -191,7 +200,7 @@ export class AccountModel {
           continue;
         }
 
-        const existing = db.prepare('SELECT id FROM accounts WHERE email = ?').get(record.email);
+        const existing = existingStmt.get(record.email);
         if (existing) {
           if (mode === 'overwrite') {
             updateStmt.run(
@@ -316,6 +325,15 @@ export class AccountModel {
   }
 
   getAll(): Account[] {
+    const list = db.prepare('SELECT * FROM accounts ORDER BY id DESC').all() as Account[];
+    const tagsByAccountId = tagModel.getTagsByAccountIds(list.map((acc) => acc.id));
+    return list.map(acc => ({
+      ...acc,
+      tags: tagsByAccountId[acc.id] || [],
+    }));
+  }
+
+  getAllBasic(): Account[] {
     return db.prepare('SELECT * FROM accounts ORDER BY id DESC').all() as Account[];
   }
 }

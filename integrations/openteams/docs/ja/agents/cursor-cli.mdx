@@ -1,0 +1,20 @@
+---
+title: "Cursor Agent CLI"
+description: "Cursorのコマンドラインエージェントをセットアップ"
+icon: /logos/cursor-logo.svg
+---
+
+<Steps>
+<Step title="Cursor Agent CLIをインストール">
+  ```bash
+  curl https://cursor.com/install -fsS | bash
+  ```
+
+  `cursor-agent --version` でインストールを確認します。詳細は [公式インストールガイド](https://docs.cursor.com/en/cli/installation) を参照してください。
+</Step>
+
+<Step title="ログイン手順に従う">
+  `cursor-agent login` でサインイン（ブラウザが開きます）。`CURSOR_API_KEY` 環境変数を設定することもできます。完全な手順：https://docs.cursor.com/en/cli/reference/authentication
+</Step>
+
+</Steps>

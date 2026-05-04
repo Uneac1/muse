@@ -16,6 +16,8 @@ exports.aiRoutes.put('/accounts/:id', ctrl.updateAccount);
 exports.aiRoutes.delete('/accounts/:id', ctrl.deleteAccount);
 exports.aiRoutes.get('/threads', ctrl.listThreads);
 exports.aiRoutes.get('/threads/:id/messages', ctrl.getMessages);
+exports.aiRoutes.put('/threads/:id', ctrl.updateThread);
 exports.aiRoutes.delete('/threads/:id', ctrl.deleteThread);
+exports.aiRoutes.delete('/accounts/:id/threads', ctrl.clearThreads);
 exports.aiRoutes.post('/accounts/:id/chat', ctrl.chat);
 //# sourceMappingURL=ai.js.map

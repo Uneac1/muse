@@ -7,6 +7,15 @@ import { StatCard } from '../components/dashboard/StatCard';
 import { QuickActions } from '../components/dashboard/QuickActions';
 import { RecentMails } from '../components/dashboard/RecentMails';
 import { readCacheState, writeCache } from '../lib/localCache';
+import {
+  CommandHero,
+  EmptyState,
+  ErrorState,
+  FilterChips,
+  InlineProgress,
+  SegmentedControl,
+  StatusTimeline,
+} from '../components/layout/ControlCenter';
 
 const DASHBOARD_CACHE_KEY = 'muse.dashboard.stats';
 const DASHBOARD_CACHE_MAX_AGE_MS = 60 * 1000;
@@ -19,6 +28,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(!cachedStats);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [focus, setFocus] = useState('all');
+  const [density, setDensity] = useState('comfortable');
 
   const fetchStats = useCallback(async (isRefresh = false) => {
     try {
@@ -45,14 +56,13 @@ export default function Dashboard() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="h-8 w-32 rounded bg-secondary animate-pulse" />
-          <div className="h-9 w-20 rounded bg-secondary animate-pulse" />
+          <div className="md3-skeleton h-28 flex-1 rounded-[14px]" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="glass-card p-5 h-24 animate-pulse" />
+            <div key={i} className="md3-skeleton h-36 rounded-[14px]" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -66,19 +76,20 @@ export default function Dashboard() {
   // Error state
   if (error) {
     return (
-      <div className="p-6">
-        <div className="glass-card p-8 flex flex-col items-center justify-center text-center">
-          <AlertTriangle className="h-12 w-12 text-destructive mb-3" />
-          <p className="text-lg font-medium text-foreground mb-1">加载失败</p>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+      <div className="space-y-6">
+        <ErrorState
+          title="Dashboard 加载失败"
+          description={error}
+          action={
           <button
             onClick={() => fetchStats()}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="md3-state-layer inline-flex items-center gap-2 rounded-[12px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
             <RefreshCw className="h-4 w-4" />
             重试
           </button>
-        </div>
+          }
+        />
       </div>
     );
   }
@@ -122,23 +133,24 @@ export default function Dashboard() {
     total: number,
   ) => (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <div className="muse-section-heading gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <h2 className="truncate text-base font-semibold text-foreground sm:text-lg">{title}</h2>
+        </div>
+        <span className="text-xs text-muted-foreground">{items.length} groups</span>
       </div>
-      <div className="space-y-3">
+      <div className="mt-4 space-y-3">
         {items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">暂无数据</div>
+          <EmptyState title="暂无数据" description="同步后这里会显示分布和占比。" />
         ) : (
           items.map((item: any) => (
-            <div key={`${title}-${item[nameKey]}`} className="rounded-xl border border-border bg-background/40 p-3">
+            <div key={`${title}-${item[nameKey]}`} className="interactive-list-row p-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">{item[nameKey] || 'unknown'}</span>
-                <span className="text-muted-foreground">{item.count}</span>
+                <span className="min-w-0 truncate pr-2 font-medium text-foreground">{item[nameKey] || 'unknown'}</span>
+                <span className="shrink-0 text-muted-foreground">{item.count}</span>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-secondary">
-                <div className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, (item.count / Math.max(1, total)) * 100)}%` }} />
-              </div>
+              <InlineProgress value={item.count} max={Math.max(1, total)} className="mt-3" />
             </div>
           ))
         )}
@@ -147,35 +159,61 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">muse-Mail 仪表盘</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">统一查看邮箱、代理、集成入口与本地缓存健康度</p>
-        </div>
-        <button
-          onClick={() => fetchStats(true)}
-          disabled={refreshing}
-          className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          刷新
-        </button>
-      </motion.div>
+    <div className="dashboard-page mx-auto w-full max-w-[1560px] space-y-6">
+      <CommandHero
+        eyebrow="System Overview"
+        title="muse-Mail 仪表盘"
+        description="统一查看邮箱、代理、集成入口与本地缓存健康度。统计块、分布面板和最近邮件都使用同一套动态 surface。"
+        actions={
+          <>
+            <button
+              onClick={() => fetchStats(true)}
+              disabled={refreshing}
+              className="md3-state-layer inline-flex items-center gap-2 rounded-[12px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              刷新
+            </button>
+            <SegmentedControl
+              value={density}
+              onChange={setDensity}
+              items={[
+                { key: 'compact', label: 'Compact' },
+                { key: 'comfortable', label: 'Comfort' },
+              ]}
+            />
+          </>
+        }
+        stats={
+          <StatusTimeline
+            items={[
+              { label: 'Command Center online', meta: `${stats.activeAccounts} active mailboxes`, state: 'done' },
+              { label: 'Proxy mesh', meta: `${stats.activeProxies}/${stats.totalProxies} online`, state: stats.activeProxies ? 'done' : 'warning' },
+              { label: 'Cache warm', meta: `${stats.totalInboxMails + stats.totalJunkMails} cached mails`, state: 'active' },
+            ]}
+          />
+        }
+      />
+
+      <FilterChips
+        value={focus}
+        onChange={setFocus}
+        items={[
+          { key: 'all', label: '全部', count: stats.totalAccounts },
+          { key: 'mail', label: 'Mail', count: stats.totalInboxMails },
+          { key: 'proxy', label: 'Proxy', count: stats.activeProxies },
+          { key: 'risk', label: 'Risk', count: stats.errorAccounts + stats.expiringTokens },
+        ]}
+      />
 
       {/* Stat Cards - 4 columns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`dashboard-stat-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${density === 'compact' ? 'gap-3' : 'gap-4'}`}>
         {statCards.map((card, i) => (
           <StatCard key={card.label} {...card} delay={i * 0.08} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="dashboard-stat-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Database} label="缓存总邮件" value={stats.totalInboxMails + stats.totalJunkMails} sub={`Inbox ${stats.totalInboxMails} / Junk ${stats.totalJunkMails}`} color="#06B6D4" delay={0.32} />
         <StatCard icon={AlertTriangle} label="异常账户" value={stats.errorAccounts} sub="需要检查授权或网络" color="#EF4444" delay={0.4} />
         <StatCard icon={RefreshCw} label="Token待刷新" value={stats.expiringTokens} sub="超过 60 天未刷新" color="#F97316" delay={0.48} />
@@ -183,36 +221,40 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom Panels: Quick Actions + Recent Mails */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="dashboard-panel-grid grid grid-cols-1 gap-6 lg:grid-cols-2">
         <QuickActions stats={stats} />
         <RecentMails mails={stats.recentMails} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="dashboard-panel-grid grid grid-cols-1 gap-6 lg:grid-cols-2">
         {renderDistributionPanel('邮箱 Provider 分布', stats.providerStats, 'provider', Tags, stats.totalAccounts)}
         {renderDistributionPanel('邮箱状态分布', stats.statusStats, 'status', ShieldCheck, stats.totalAccounts)}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="dashboard-panel-grid grid grid-cols-1 gap-6 lg:grid-cols-2">
         {renderDistributionPanel('代理状态分布', stats.proxyStatusStats, 'status', Activity, stats.totalProxies)}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold text-foreground">邮件量 Top 账户</h2>
-            <p className="text-sm text-muted-foreground">按 Inbox + Junk 缓存数量排序，快速定位重度账户。</p>
+          <div className="muse-section-heading gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold text-foreground sm:text-lg">邮件量 Top 账户</h2>
+              <p className="mt-1 text-sm text-muted-foreground">按 Inbox + Junk 缓存数量排序，快速定位重度账户。</p>
+            </div>
+            <span className="md3-chip shrink-0">{stats.topMailAccounts.length} accounts</span>
           </div>
-          <div className="grid grid-cols-1 gap-3">
+          <div className="mt-4 grid grid-cols-1 gap-3">
             {stats.topMailAccounts.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">暂无缓存邮件</div>
+              <EmptyState title="暂无缓存邮件" description="同步邮箱后会显示邮件量最高的账号。" />
             ) : (
               stats.topMailAccounts.map((item) => (
-                <div key={item.account_id} className="rounded-xl border border-border bg-background/40 p-4">
+                <div key={item.account_id} className="interactive-list-row p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate font-medium text-foreground">{item.email}</div>
                       <div className="mt-1 text-xs text-muted-foreground">Inbox {item.inbox_count} · Junk {item.junk_count}</div>
                     </div>
-                    <div className="text-xl font-semibold text-foreground">{item.total_count}</div>
+                    <div className="shrink-0 text-xl font-semibold text-foreground">{item.total_count}</div>
                   </div>
+                  <InlineProgress value={item.total_count} max={Math.max(1, stats.topMailAccounts[0]?.total_count || 1)} className="mt-3" />
                 </div>
               ))
             )}

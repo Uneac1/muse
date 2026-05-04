@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import type { TokenAnalyticsSnapshot, TokenQuotaCard, TokenUsageSection } from '../types';
 import { ProxyService } from './ProxyService';
+import { proxyKernelService } from './ProxyKernelService';
 
 const OPENAI_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
 const OPENAI_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
@@ -8,6 +9,8 @@ const OPENAI_TOKEN_URL = 'https://auth.openai.com/oauth/token';
 const OPENAI_WHAM_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
 const OPENAI_DEFAULT_SCOPE = 'openid profile email offline_access';
 const OPENAI_REFRESH_SCOPE = 'openid profile email';
+const OPENAI_CODEX_SIMPLIFIED_FLOW = 'true';
+const OPENAI_ID_TOKEN_ADD_ORGANIZATIONS = 'true';
 const proxyService = new ProxyService();
 
 export interface OpenAIAuthSession {
@@ -96,8 +99,8 @@ export class OpenAIAccountService {
       client_id: OPENAI_CLIENT_ID,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
-      codex_cli_simplified_flow: 'true',
-      id_token_add_organizations: 'true',
+      codex_cli_simplified_flow: OPENAI_CODEX_SIMPLIFIED_FLOW,
+      id_token_add_organizations: OPENAI_ID_TOKEN_ADD_ORGANIZATIONS,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: OPENAI_DEFAULT_SCOPE,
@@ -245,6 +248,9 @@ export class OpenAIAccountService {
       if (raw.includes('unsupported_country_region_territory')) {
         throw new Error('OpenAI 当前拒绝了这条网络出口（unsupported_country_region_territory）。请先在 Muse 的代理设置里配置并启用可用代理，再重试 OpenAI 授权。');
       }
+      if (raw.includes('refresh_token_reused')) {
+        throw new Error(`OpenAI 官方拒绝刷新：refresh_token_reused。系统会保留自动同步并在退避后重试；如果持续失败，再重新 OAuth 授权。`);
+      }
       throw new Error(`OpenAI token 请求失败：${response.status} ${raw || response.statusText}`);
     }
 
@@ -268,33 +274,58 @@ export class OpenAIAccountService {
   }
 
   private async performRequest(url: string, options: { method: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }) {
-    const { agent, dispatcher, type } = proxyService.getAgent();
+    const { agent, dispatcher, type, proxy, recoveryError } = await proxyService.resolveAgent();
     const headers = options.headers || {};
+    const targetHost = (() => {
+      try {
+        return new URL(url).host;
+      } catch {
+        return url;
+      }
+    })();
+    const proxyLabel = proxy ? `${proxy.name || proxy.host}:${proxy.port} (${proxy.type})` : '直连';
 
-    if (type === 'socks5' && agent) {
-      const nodefetch = require('node-fetch');
-      return nodefetch(url, {
+    if (recoveryError) {
+      throw new Error(`OpenAI 同步前校准内置代理失败：${recoveryError}`);
+    }
+
+    if (proxy?.name === 'Muse 内置代理内核') {
+      try {
+        await proxyKernelService.ensureOpenAiProxyReady();
+      } catch (error) {
+        throw new Error(`OpenAI 同步前校准内置代理失败：${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    try {
+      if (type === 'socks5' && agent) {
+        const nodefetch = require('node-fetch');
+        return nodefetch(url, {
+          method: options.method,
+          headers,
+          body: options.body,
+          agent,
+        });
+      }
+
+      if (type === 'http' && dispatcher) {
+        const { fetch: undiciFetch } = require('undici');
+        return undiciFetch(url, {
+          method: options.method,
+          headers,
+          body: options.body,
+          dispatcher,
+        });
+      }
+
+      return fetch(url, {
         method: options.method,
         headers,
         body: options.body,
-        agent,
       });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`OpenAI 网络请求失败：${targetHost}，出口：${proxyLabel}，原因：${message}`);
     }
-
-    if (type === 'http' && dispatcher) {
-      const { fetch: undiciFetch } = require('undici');
-      return undiciFetch(url, {
-        method: options.method,
-        headers,
-        body: options.body,
-        dispatcher,
-      });
-    }
-
-    return fetch(url, {
-      method: options.method,
-      headers,
-      body: options.body,
-    });
   }
 }

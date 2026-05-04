@@ -8,6 +8,8 @@ import type {
   TokenUsageSection,
 } from '../types';
 import { OpenAIAccountService } from './OpenAIAccountService';
+import type { OpenAITokenInfo } from './OpenAIAccountService';
+import { refreshOpenAITokenAccount } from './TokenAccountRefreshService';
 
 const DEFAULT_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36';
@@ -123,6 +125,10 @@ function parseSessionPayload(sessionPayload: string, format: TokenSessionFormat)
   }
 
   return payload;
+}
+
+function isOpenAiRefreshBlockedError(message: string) {
+  return /unsupported_country_region_territory|Country, region, or territory not supported|身份验证错误|unknown_error|forbidden|403/i.test(message);
 }
 
 function extractUsageSections(text: string): TokenUsageSection[] {
@@ -273,9 +279,21 @@ export class TokenQuotaService {
       }
 
       if ((authMethod === 'oauth' || authMethod === 'manual') && (account.refresh_token || account.access_token)) {
-        const tokenInfo = account.refresh_token
-          ? await openAIAccountService.refreshToken(account.refresh_token)
-          : openAIAccountService.parseTokenInfo(account.access_token, account.refresh_token, account.id_token);
+        let tokenInfo: Partial<OpenAITokenInfo>;
+
+        if (account.refresh_token) {
+          try {
+            tokenInfo = await refreshOpenAITokenAccount(account);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (!account.access_token || !isOpenAiRefreshBlockedError(message)) {
+              throw error;
+            }
+            tokenInfo = openAIAccountService.parseTokenInfo(account.access_token, account.refresh_token, account.id_token);
+          }
+        } else {
+          tokenInfo = openAIAccountService.parseTokenInfo(account.access_token, account.refresh_token, account.id_token);
+        }
 
         return openAIAccountService.fetchWhamSnapshot(
           sourceUrl,

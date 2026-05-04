@@ -24,10 +24,12 @@ export default function ProxyTestButton({ proxyId, onTest }: Props) {
   };
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex min-w-0 items-center gap-2">
       <button
         onClick={handleTest}
         disabled={testing}
+        aria-busy={testing}
+        aria-label={testing ? '正在测试代理' : '测试代理'}
         className="px-2.5 py-1 text-xs rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {testing ? (
@@ -41,7 +43,7 @@ export default function ProxyTestButton({ proxyId, onTest }: Props) {
         ) : '测试'}
       </button>
       {result && !testing && (
-        <span className={`text-xs ${result.status === 'active' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+        <span aria-live="polite" className={`max-w-[9rem] truncate text-xs ${result.status === 'active' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
           {result.status === 'active' ? `${result.ip} · ${result.latency}ms` : '连接失败'}
         </span>
       )}

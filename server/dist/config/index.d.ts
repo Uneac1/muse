@@ -6,6 +6,7 @@ export declare const config: {
     accessPassword: string;
     googleClientId: string;
     googleClientSecret: string;
+    googleProjectId: string;
     adminGoogleClientId: string;
     adminGoogleClientSecret: string;
     adminAllowedEmails: string[];
@@ -19,6 +20,9 @@ export declare const config: {
     ymailApiBaseUrl: string;
     webAppOrigin: string;
     openaiOAuthRedirectUri: string;
+    linuxDoClientId: string;
+    linuxDoClientSecret: string;
+    linuxDoOAuthRedirectUri: string;
     googleOAuthRedirectUri: string;
     adminGoogleOAuthRedirectUri: string;
 };

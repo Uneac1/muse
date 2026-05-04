@@ -5,10 +5,14 @@ export declare class IntegrationController {
     private getNotionRecord;
     private getMiSubRecord;
     private getYmailRecord;
+    private getLinuxDoRecord;
     getGitHub: (ctx: Context) => Promise<void>;
     connectGitHub: (ctx: Context) => Promise<void>;
     syncGitHub: (ctx: Context) => Promise<void>;
     disconnectGitHub: (ctx: Context) => Promise<void>;
+    getLinuxDo: (ctx: Context) => Promise<void>;
+    syncLinuxDo: (ctx: Context) => Promise<void>;
+    disconnectLinuxDo: (ctx: Context) => Promise<void>;
     getCloudflare: (ctx: Context) => Promise<void>;
     connectCloudflare: (ctx: Context) => Promise<void>;
     syncCloudflare: (ctx: Context) => Promise<void>;
@@ -28,6 +32,10 @@ export declare class IntegrationController {
     saveMiSubSettings: (ctx: Context) => Promise<void>;
     updateMiSubNodeCount: (ctx: Context) => Promise<void>;
     batchUpdateMiSubNodes: (ctx: Context) => Promise<void>;
+    analyzeMiSubWithAi: (ctx: Context) => Promise<void>;
+    getMiSubAiInspection: (ctx: Context) => Promise<void>;
+    updateMiSubAiInspection: (ctx: Context) => Promise<void>;
+    runMiSubAiInspection: (ctx: Context) => Promise<void>;
     disconnectMiSub: (ctx: Context) => Promise<void>;
     getYmail: (ctx: Context) => Promise<void>;
     connectYmail: (ctx: Context) => Promise<void>;

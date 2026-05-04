@@ -27,12 +27,16 @@ const DEFAULTS = {
         model: 'claude-opus-4-6',
     },
     gemini: {
-        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1/models',
         model: 'gemini-2.5-flash',
     },
     deepseek: {
         baseUrl: 'https://api.deepseek.com/v1',
         model: 'deepseek-chat',
+    },
+    mimo: {
+        baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+        model: 'mimo-v2.5-pro',
     },
     openai_compatible: {
         baseUrl: 'https://anyrouter.top/v1',
@@ -96,6 +100,17 @@ class AiAccountModel {
     markStatus(id, status) {
         database_1.default.prepare('UPDATE ai_accounts SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
     }
+    demoteUnavailable(id, reason) {
+        database_1.default.prepare(`
+      UPDATE ai_accounts
+      SET
+        status = 'error',
+        priority_rank = CASE WHEN priority_rank < 9 THEN 9 ELSE priority_rank END,
+        last_error = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(reason, id);
+    }
     updateLastUsed(id) {
         database_1.default.prepare(`
       UPDATE ai_accounts
@@ -104,6 +119,10 @@ class AiAccountModel {
     `).run(id);
     }
     updateDiagnostics(id, result) {
+        const current = this.getById(id);
+        const nextStatus = current?.status === 'inactive'
+            ? 'inactive'
+            : result.ok ? 'active' : 'error';
         database_1.default.prepare(`
       UPDATE ai_accounts
       SET
@@ -113,13 +132,13 @@ class AiAccountModel {
         last_http_status = ?,
         last_error = ?,
         last_response_preview = ?,
-        available_models = ?,
+        available_models = CASE WHEN ? THEN ? ELSE available_models END,
         last_models_synced_at = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE last_models_synced_at END,
         transport_hint = ?,
         status = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(result.ok ? 'success' : 'failed', Math.round(result.latencyMs), result.status, result.ok ? '' : result.message, result.preview || '', JSON.stringify(result.models || []), result.models.length > 0 ? 1 : 0, result.transport || 'unknown', result.ok ? 'active' : 'error', id);
+    `).run(result.ok ? 'success' : 'failed', Math.round(result.latencyMs), result.status, result.ok ? '' : result.message, result.preview || '', result.models.length > 0 ? 1 : 0, JSON.stringify(result.models || []), result.models.length > 0 ? 1 : 0, result.transport || 'unknown', nextStatus, id);
     }
     getProviderDefaults(provider) {
         return DEFAULTS[provider];
@@ -188,9 +207,24 @@ class AiThreadModel {
     touch(id) {
         database_1.default.prepare('UPDATE ai_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(id);
     }
+    rename(id, title) {
+        const normalized = String(title || '').trim() || '新对话';
+        const result = database_1.default.prepare(`
+      UPDATE ai_threads
+      SET title = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(normalized, id);
+        if (!result.changes)
+            return undefined;
+        return this.getById(id);
+    }
     delete(id) {
         const result = database_1.default.prepare('DELETE FROM ai_threads WHERE id = ?').run(id);
         return result.changes > 0;
+    }
+    deleteByAccount(accountId) {
+        const result = database_1.default.prepare('DELETE FROM ai_threads WHERE account_id = ?').run(accountId);
+        return Number(result.changes || 0);
     }
 }
 exports.AiThreadModel = AiThreadModel;

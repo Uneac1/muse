@@ -1,0 +1,130 @@
+---
+title: "Factory Droid"
+description: "Set up Factory AI's Droid coding agent"
+icon: /logos/droid-light.svg
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+
+<Steps>
+<Step title="Install Droid CLI">
+  <Tabs>
+  <Tab title="macOS / Linux">
+  ```bash
+  curl -fsSL https://app.factory.ai/cli | sh
+  ```
+  </Tab>
+
+  <Tab title="Windows">
+  ```powershell
+  irm https://app.factory.ai/cli/windows | iex
+  ```
+  </Tab>
+  </Tabs>
+
+  For the latest installation instructions and platform-specific guidance, visit the [Factory AI CLI documentation](https://factory.ai/product/cli).
+</Step>
+
+<Step title="Authenticate with Factory AI">
+  To use Droid in openteams, you must first authenticate:
+
+  1. Run `droid` to launch the interactive CLI
+  2. Use the `/login` command within Droid to authenticate
+
+  Alternatively, generate an API key from [Factory Settings](https://app.factory.ai/settings/api-keys) and set it as an environment variable:
+
+  ```bash
+  export FACTORY_API_KEY=fk-...
+  ```
+
+  For detailed authentication instructions, see the [Factory AI documentation](https://docs.factory.ai/factory-cli/getting-started/overview).
+</Step>
+
+<Step title="Start openteams">
+  Once authenticated, launch openteams:
+
+  **Option 1: Run with npx**
+  ```bash
+  npx openteams
+  ```
+
+  **Option 2: Use Desktop Installer**
+  Launch the installed desktop app directly. See [Getting Started](/getting-started) for installer instructions.
+
+  You can now select Factory Droid when creating task attempts.
+</Step>
+</Steps>
+
+## Configuration Options
+
+Droid supports several configuration options in openteams:
+
+- **Autonomy Level**: Controls permission level for file and system operations
+  - `normal`: Read-only mode safe for reviewing planned changes without execution
+  - `low`: Basic file creation/editing while blocking system changes
+  - `medium`: Development operations with recoverable side effects
+  - `high`: Production operations with security implications or major side effects
+  - `skip-permissions-unsafe`: Bypasses all permission checks (use only in isolated environments) (default)
+
+- **Model**: Specify which model to use
+
+- **Reasoning Effort**: Control the reasoning depth
+  - `off`: Minimal reasoning
+  - `low`: Light reasoning
+  - `medium`: Balanced reasoning
+  - `high`: Deep reasoning for complex tasks
+
+These options can be configured when creating agent configurations in openteams.
+
+
+

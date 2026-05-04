@@ -9,6 +9,21 @@ class ProxyModel {
     list() {
         return database_1.default.prepare('SELECT * FROM proxies ORDER BY id DESC').all();
     }
+    countGroupedByStatus() {
+        return database_1.default.prepare(`
+      SELECT status, COUNT(*) as count
+      FROM proxies
+      GROUP BY status
+    `).all();
+    }
+    getStats() {
+        const statusStats = this.countGroupedByStatus();
+        return {
+            total: statusStats.reduce((sum, item) => sum + item.count, 0),
+            active: statusStats.find((item) => item.status === 'active')?.count || 0,
+            statusStats,
+        };
+    }
     getById(id) {
         return database_1.default.prepare('SELECT * FROM proxies WHERE id = ?').get(id);
     }
@@ -49,6 +64,9 @@ class ProxyModel {
     }
     updateTestResult(id, ip, status) {
         database_1.default.prepare('UPDATE proxies SET last_tested_at = CURRENT_TIMESTAMP, last_test_ip = ?, status = ? WHERE id = ?').run(ip, status, id);
+    }
+    markFailed(id) {
+        database_1.default.prepare('UPDATE proxies SET last_tested_at = CURRENT_TIMESTAMP, status = ? WHERE id = ?').run('failed', id);
     }
 }
 exports.ProxyModel = ProxyModel;

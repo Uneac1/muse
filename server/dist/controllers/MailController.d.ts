@@ -4,6 +4,9 @@ export declare class MailController {
     fetchNew(ctx: Context): Promise<void>;
     clear(ctx: Context): Promise<void>;
     cached(ctx: Context): Promise<void>;
+    unified(ctx: Context): Promise<void>;
+    private getTemporaryMails;
+    private mapTemporaryMail;
     search(ctx: Context): Promise<void>;
     recent(ctx: Context): Promise<void>;
     refreshRecent(ctx: Context): Promise<void>;

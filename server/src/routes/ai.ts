@@ -12,5 +12,7 @@ aiRoutes.put('/accounts/:id', ctrl.updateAccount);
 aiRoutes.delete('/accounts/:id', ctrl.deleteAccount);
 aiRoutes.get('/threads', ctrl.listThreads);
 aiRoutes.get('/threads/:id/messages', ctrl.getMessages);
+aiRoutes.put('/threads/:id', ctrl.updateThread);
 aiRoutes.delete('/threads/:id', ctrl.deleteThread);
+aiRoutes.delete('/accounts/:id/threads', ctrl.clearThreads);
 aiRoutes.post('/accounts/:id/chat', ctrl.chat);

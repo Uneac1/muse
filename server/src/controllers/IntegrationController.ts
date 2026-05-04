@@ -1,10 +1,16 @@
 import { Context } from 'koa';
+import { AiAccountModel } from '../models/AiChat';
 import { config } from '../config';
 import { IntegrationTokenModel } from '../models/IntegrationToken';
+import { AiChatService } from '../services/AiChatService';
 import { IntegrationService } from '../services/IntegrationService';
+import { buildMiSubAiPrompt, normalizeMiSubAiAnalysis } from '../services/MiSubAiShared';
+import { miSubAiInspectionService } from '../services/MiSubAiInspectionService';
 import { YmailService } from '../services/YmailService';
 import { fail, success } from '../utils/response';
 
+const aiAccountModel = new AiAccountModel();
+const aiChatService = new AiChatService();
 const model = new IntegrationTokenModel();
 const service = new IntegrationService();
 const ymailService = new YmailService();
@@ -87,6 +93,18 @@ function emptyYmailState() {
   };
 }
 
+function emptyLinuxDoState() {
+  return {
+    connected: false,
+    clientConfigured: !!config.linuxDoClientId && !!config.linuxDoClientSecret,
+    tokenMasked: '',
+    lastSyncAt: null,
+    expiresAt: null,
+    scopes: [],
+    user: null,
+  };
+}
+
 export class IntegrationController {
   private getGitHubRecord() {
     return model.get('github') || (config.defaultGitHubToken
@@ -138,6 +156,10 @@ export class IntegrationController {
       : undefined);
   }
 
+  private getLinuxDoRecord() {
+    return model.get('linuxdo');
+  }
+
   getGitHub = async (ctx: Context) => {
     const record = this.getGitHubRecord();
     if (!record) return success(ctx, emptyGitHubState());
@@ -175,6 +197,34 @@ export class IntegrationController {
 
   disconnectGitHub = async (ctx: Context) => {
     model.delete('github');
+    success(ctx, { disconnected: true });
+  };
+
+  getLinuxDo = async (ctx: Context) => {
+    const record = this.getLinuxDoRecord();
+    if (!record) return success(ctx, emptyLinuxDoState());
+
+    try {
+      success(ctx, await service.fetchLinuxDoData(record));
+    } catch (err: any) {
+      fail(ctx, err.message || '加载 Linux.do 信息失败', 500);
+    }
+  };
+
+  syncLinuxDo = async (ctx: Context) => {
+    const record = this.getLinuxDoRecord();
+    if (!record) return fail(ctx, 'Linux.do 尚未连接', 400);
+
+    try {
+      const updated = model.upsert('linuxdo', record.token);
+      success(ctx, await service.fetchLinuxDoData(updated, { force: true }));
+    } catch (err: any) {
+      fail(ctx, err.message || '同步 Linux.do 失败', 500);
+    }
+  };
+
+  disconnectLinuxDo = async (ctx: Context) => {
+    model.delete('linuxdo');
     success(ctx, { disconnected: true });
   };
 
@@ -414,6 +464,81 @@ export class IntegrationController {
       success(ctx, await service.batchUpdateMiSubNodes(record, subscriptionIds));
     } catch (err: any) {
       fail(ctx, err.message || '批量刷新 MiSub 节点失败', 500);
+    }
+  };
+
+  analyzeMiSubWithAi = async (ctx: Context) => {
+    const record = this.getMiSubRecord();
+    if (!record) return fail(ctx, 'MiSub 尚未连接', 400);
+
+    const { accountId, goal } = ctx.request.body as { accountId?: number; goal?: string };
+    const requestedAccountId = Number(accountId);
+    const requestedAccount = Number.isFinite(requestedAccountId) ? aiAccountModel.getById(requestedAccountId) : null;
+    if (Number.isFinite(requestedAccountId) && !requestedAccount) return fail(ctx, 'AI 账号不存在', 404);
+    if (requestedAccount?.status === 'inactive') return fail(ctx, 'AI 账号已停用，请先启用', 400);
+
+    const candidates = [
+      ...(requestedAccount ? [requestedAccount] : []),
+      ...aiAccountModel.list().filter((item) =>
+        item.id !== requestedAccount?.id &&
+        item.status !== 'inactive' &&
+        (item.api_key || item.auth_mode === 'google_oauth')
+      ),
+    ];
+    if (candidates.length === 0) return fail(ctx, '没有可用的 AI 账号，请先在 AI 页面配置并测试至少一个可用账号。', 400);
+
+    try {
+      const data = await service.fetchMiSubData(record, { force: true });
+      const prompt = buildMiSubAiPrompt(data as any, goal);
+      let lastError: any = null;
+      for (const account of candidates) {
+        try {
+          const aiResult = await aiChatService.sendMessage(account, [
+            {
+              id: 0,
+              thread_id: 0,
+              role: 'user',
+              content: prompt,
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          const raw = typeof aiResult === 'string'
+            ? aiResult
+            : typeof aiResult?.content === 'string'
+            ? aiResult.content
+            : String((aiResult as any)?.content?.content || '');
+          return success(ctx, normalizeMiSubAiAnalysis(raw, account, String(goal || '').trim() || '整理 MiSub 订阅与分组', data));
+        } catch (error: any) {
+          lastError = error;
+        }
+      }
+      fail(ctx, lastError?.message || '所有可用 AI 账号都无法完成 MiSub 分析', 400);
+    } catch (err: any) {
+      fail(ctx, err.message || 'MiSub AI 分析失败', 500);
+    }
+  };
+
+  getMiSubAiInspection = async (ctx: Context) => {
+    try {
+      success(ctx, miSubAiInspectionService.getState());
+    } catch (err: any) {
+      fail(ctx, err.message || '读取 MiSub AI 巡检状态失败', 500);
+    }
+  };
+
+  updateMiSubAiInspection = async (ctx: Context) => {
+    try {
+      success(ctx, miSubAiInspectionService.updateConfig((ctx.request.body as any) || {}));
+    } catch (err: any) {
+      fail(ctx, err.message || '保存 MiSub AI 巡检配置失败', 500);
+    }
+  };
+
+  runMiSubAiInspection = async (ctx: Context) => {
+    try {
+      success(ctx, await miSubAiInspectionService.runNow({ force: true }));
+    } catch (err: any) {
+      fail(ctx, err.message || '执行 MiSub AI 巡检失败', 500);
     }
   };
 

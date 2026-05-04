@@ -32,4 +32,22 @@ export class ProxyKernelController {
       fail(ctx, error.message || '停止内置代理内核失败', 500);
     }
   }
+
+  async select(ctx: Context) {
+    try {
+      const body = ctx.request.body as any;
+      success(ctx, await proxyKernelService.selectProxyGroup(body));
+    } catch (error: any) {
+      fail(ctx, error.message || '切换代理节点失败', 500);
+    }
+  }
+
+  async testOpenAi(ctx: Context) {
+    try {
+      const body = ctx.request.body as any;
+      success(ctx, await proxyKernelService.testOpenAiNode(body));
+    } catch (error: any) {
+      fail(ctx, error.message || '测试 OpenAI 节点失败', 500);
+    }
+  }
 }

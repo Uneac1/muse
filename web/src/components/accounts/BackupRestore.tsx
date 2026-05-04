@@ -27,43 +27,37 @@ export default function BackupRestore() {
   };
 
   const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!confirm('⚠️ 恢复数据库将覆盖当前所有数据，是否继续？')) {
-      e.target.value = '';
+      input.value = '';
       return;
     }
 
     setRestoring(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const arrayBuffer = ev.target?.result as ArrayBuffer;
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const token = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/octet-stream' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const token = localStorage.getItem('auth_token');
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        headers,
+        body: file,
+      });
 
-        const res = await fetch('/api/backup/restore', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ fileContent: base64 })
-        });
+      const json = await res.json();
+      if (json.code !== 200) throw new Error(json.message || '恢复失败');
 
-        const json = await res.json();
-        if (json.code !== 200) throw new Error(json.message || '恢复失败');
-
-        alert('✅ 数据库恢复成功！页面将刷新。');
-        window.location.reload();
-      };
-      reader.readAsArrayBuffer(file);
+      alert('✅ 数据库恢复成功！页面将刷新。');
+      window.location.reload();
     } catch (err: any) {
       alert('恢复失败: ' + err.message);
     } finally {
       setRestoring(false);
-      e.target.value = '';
+      input.value = '';
     }
   };
 

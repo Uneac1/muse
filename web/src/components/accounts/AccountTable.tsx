@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Account, Tag, MailboxType } from '../../types';
 import { maskText } from '../../lib/utils';
 import ContextMenu from './ContextMenu';
+import { StatusTag } from '../ui/primitives';
 
 type SortKey = 'provider' | 'email' | 'password' | 'client_id' | 'status' | 'token_refreshed_at';
 type SortDir = 'asc' | 'desc' | null;
@@ -51,18 +52,19 @@ function SortHeader({ label, sortKey: key, currentKey, currentDir, onSort, class
   label: string; sortKey: SortKey; currentKey: SortKey | null; currentDir: SortDir; onSort: (k: SortKey) => void; className?: string;
 }) {
   return (
-    <th
-      className={`text-left py-3 px-3 font-medium text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors ${className}`}
-      onClick={() => onSort(key)}
-    >
-      <span className="inline-flex items-center gap-1">
+    <th className={`text-left py-3 px-3 font-medium text-zinc-500 dark:text-zinc-400 ${className}`} aria-sort={currentKey === key ? (currentDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button
+        type="button"
+        onClick={() => onSort(key)}
+        className="inline-flex items-center gap-1 rounded-md outline-none transition-colors hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:text-zinc-200"
+      >
         {label}
         {currentKey === key ? (
-          <span className="text-xs">{currentDir === 'asc' ? '↑' : '↓'}</span>
+          <span className="text-xs" aria-hidden="true">{currentDir === 'asc' ? '↑' : '↓'}</span>
         ) : (
-          <span className="text-xs text-zinc-300 dark:text-zinc-600">↕</span>
+          <span className="text-xs text-zinc-300 dark:text-zinc-600" aria-hidden="true">↕</span>
         )}
-      </span>
+      </button>
     </th>
   );
 }
@@ -76,7 +78,20 @@ function CopyCell({ text, children, className = '' }: { text: string; children: 
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <td className={`py-3 px-3 cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors ${className}`} onClick={handleClick} title="点击复制">
+    <td
+      className={`py-3 px-3 cursor-pointer hover:bg-blue-50/50 focus-visible:bg-blue-50/50 dark:hover:bg-blue-900/10 dark:focus-visible:bg-blue-900/10 transition-colors ${className}`}
+      onClick={handleClick}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
+      role="button"
+      tabIndex={text ? 0 : -1}
+      title="点击复制"
+      aria-label="复制单元格内容"
+    >
       {copied ? <span className="text-green-600 dark:text-green-400 text-xs">已复制 ✓</span> : children}
     </td>
   );
@@ -87,11 +102,14 @@ export default function AccountTable({ accounts, selectedIds, onSelectIds, onEdi
   const [sortDir, setSortDir] = useState<SortDir>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; account: Account } | null>(null);
 
-  const handleSort = (key: SortKey) => {
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const visibleColumnSet = useMemo(() => new Set(visibleColumns), [visibleColumns]);
+
+  const handleSort = useCallback((key: SortKey) => {
     if (sortKey !== key) { setSortKey(key); setSortDir('asc'); }
     else if (sortDir === 'asc') setSortDir('desc');
     else { setSortKey(null); setSortDir(null); }
-  };
+  }, [sortDir, sortKey]);
 
   const sortedAccounts = useMemo(() => {
     if (!sortKey || !sortDir) return accounts;
@@ -103,69 +121,49 @@ export default function AccountTable({ accounts, selectedIds, onSelectIds, onEdi
     });
   }, [accounts, sortKey, sortDir]);
 
-  const isVisible = (key: string) => visibleColumns.includes(key);
+  const isVisible = useCallback((key: string) => visibleColumnSet.has(key), [visibleColumnSet]);
 
   const allSelected = accounts.length > 0 && selectedIds.length === accounts.length;
 
-  const toggleAll = () => {
+  const toggleAll = useCallback(() => {
     onSelectIds(allSelected ? [] : accounts.map(a => a.id));
-  };
+  }, [accounts, allSelected, onSelectIds]);
 
-  const toggleOne = (id: number) => {
+  const toggleOne = useCallback((id: number) => {
     onSelectIds(
-      selectedIds.includes(id) ? selectedIds.filter(i => i !== id) : [...selectedIds, id]
+      selectedIdSet.has(id) ? selectedIds.filter(i => i !== id) : [...selectedIds, id]
     );
-  };
+  }, [onSelectIds, selectedIdSet, selectedIds]);
 
   const statusBadge = (status: Account['status']) => {
-    const map = {
-      active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      inactive: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400',
-      error: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    const tone = {
+      active: 'success',
+      inactive: 'neutral',
+      error: 'danger',
+    } as const;
+    const label = {
+      active: '正常',
+      inactive: '未激活',
+      error: '异常',
     };
-    const label = { active: '正常', inactive: '未激活', error: '异常' };
-    return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${map[status]}`}>
-        {label[status]}
-      </span>
-    );
+    return <StatusTag tone={tone[status]}>{label[status]}</StatusTag>;
   };
 
   const tokenStatusBadge = (account: Account) => {
     if (account.status === 'error') {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-          异常
-        </span>
-      );
+      return <StatusTag tone="danger">异常</StatusTag>;
     }
     if (!account.token_refreshed_at) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
-          未使用
-        </span>
-      );
+      return <StatusTag>未使用</StatusTag>;
     }
     const days = Math.floor((Date.now() - new Date(account.token_refreshed_at).getTime()) / (1000 * 60 * 60 * 24));
     if (days > 80) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" title={`${days} 天未刷新`}>
-          高风险
-        </span>
-      );
+      return <span title={`${days} 天未刷新`}><StatusTag tone="danger">高风险</StatusTag></span>;
     }
     if (days > 60) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" title={`${days} 天未刷新`}>
-          即将过期
-        </span>
-      );
+      return <span title={`${days} 天未刷新`}><StatusTag tone="warning">即将过期</StatusTag></span>;
     }
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" title={`${days} 天前刷新`}>
-        正常
-      </span>
-    );
+    return <span title={`${days} 天前刷新`}><StatusTag tone="success">正常</StatusTag></span>;
   };
 
   if (loading) {
@@ -187,12 +185,12 @@ export default function AccountTable({ accounts, selectedIds, onSelectIds, onEdi
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="account-table-scroll overflow-x-auto">
+      <table className="min-w-[1120px] w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-200 dark:border-zinc-700">
-            <th className="w-10 py-3 px-3">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500" />
+              <th className="sticky left-0 z-10 w-10 bg-inherit py-3 px-3">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="选择全部账户" className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500" />
             </th>
             {isVisible('index') && (
               <th className="w-12 text-center py-3 px-3 font-medium text-zinc-500 dark:text-zinc-400">#</th>
@@ -237,13 +235,13 @@ export default function AccountTable({ accounts, selectedIds, onSelectIds, onEdi
               }}
             >
               <td className="py-3 px-3">
-                <input type="checkbox" checked={selectedIds.includes(account.id)} onChange={() => toggleOne(account.id)} className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500" />
+                <input type="checkbox" checked={selectedIdSet.has(account.id)} onChange={() => toggleOne(account.id)} aria-label={`选择 ${account.email}`} className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500" />
               </td>
               {isVisible('index') && (
                 <td className="py-3 px-3 text-center text-zinc-400 text-xs">{index + 1}</td>
               )}
               {isVisible('provider') && (
-                <td className="py-3 px-3">
+                <td className="sticky left-0 z-10 bg-inherit py-3 px-3">
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                     account.provider === 'gmail'
                       ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
@@ -324,13 +322,13 @@ export default function AccountTable({ accounts, selectedIds, onSelectIds, onEdi
               {isVisible('actions') && (
                 <td className="py-3 px-3">
                   <div className="flex items-center justify-end gap-1">
-                    <button onClick={() => onEdit(account)} title="编辑" className="p-1.5 rounded-lg text-zinc-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                    <button onClick={() => onEdit(account)} title="编辑" aria-label={`编辑 ${account.email}`} className="p-1.5 rounded-lg text-zinc-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
-                    <button onClick={() => onViewMail(account, 'INBOX')} title="查看邮件" className="p-1.5 rounded-lg text-zinc-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                    <button onClick={() => onViewMail(account, 'INBOX')} title="查看邮件" aria-label={`查看 ${account.email} 邮件`} className="p-1.5 rounded-lg text-zinc-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
                       <Mail className="w-4 h-4" />
                     </button>
-                    <button onClick={() => onDelete(account.id)} title="删除" className="p-1.5 rounded-lg text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <button onClick={() => onDelete(account.id)} title="删除" aria-label={`删除 ${account.email}`} className="p-1.5 rounded-lg text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Account, MailAttachment } from '../../types';
+import { Button, FieldLabel, SelectInput, StatusTag, TextArea, TextInput } from '../ui/primitives';
 
 interface ComposeDraft {
   to?: string;
@@ -102,13 +103,13 @@ export default function ComposeMailDialog({
               支持 Gmail、QQ 和自定义域名邮箱发信，也可以直接从邮件详情里回复或转发。
             </p>
           </div>
-          <button
+          <Button
+            variant="outlined"
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             关闭
-          </button>
+          </Button>
         </div>
 
         {availableAccounts.length === 0 ? (
@@ -118,79 +119,91 @@ export default function ComposeMailDialog({
         ) : (
           <div className="mt-6 grid gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">发件账户</label>
-              <select
+              <FieldLabel>发件账户</FieldLabel>
+              <SelectInput
+                variant="outlined"
                 value={accountId}
                 onChange={(event) => setAccountId(Number(event.target.value))}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                aria-label="发件账户"
+                className="w-full"
               >
                 {availableAccounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.email} · {account.provider} · {account.mode === 'temporary' ? '临时' : '长期'}
                   </option>
                 ))}
-              </select>
+              </SelectInput>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">收件人</label>
-                <input
+                <FieldLabel>收件人</FieldLabel>
+                <TextInput
+                  variant="outlined"
                   type="text"
                   value={to}
                   onChange={(event) => setTo(event.target.value)}
                   placeholder="recipient@example.com"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  aria-label="收件人"
+                  className="w-full"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">抄送</label>
-                <input
+                <FieldLabel>抄送</FieldLabel>
+                <TextInput
+                  variant="outlined"
                   type="text"
                   value={cc}
                   onChange={(event) => setCc(event.target.value)}
                   placeholder="可选，多个邮箱用逗号分隔"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  aria-label="抄送"
+                  className="w-full"
                 />
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">密送</label>
-                <input
+                <FieldLabel>密送</FieldLabel>
+                <TextInput
+                  variant="outlined"
                   type="text"
                   value={bcc}
                   onChange={(event) => setBcc(event.target.value)}
                   placeholder="可选，多个邮箱用逗号分隔"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  aria-label="密送"
+                  className="w-full"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">主题</label>
-                <input
+                <FieldLabel>主题</FieldLabel>
+                <TextInput
+                  variant="outlined"
                   type="text"
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
                   placeholder="输入邮件主题"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  aria-label="主题"
+                  className="w-full"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">正文</label>
-              <textarea
+              <FieldLabel>正文</FieldLabel>
+              <TextArea
+                variant="outlined"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 rows={10}
                 placeholder="写点什么。"
-                className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                aria-label="正文"
+                className="w-full resize-none"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">附件</label>
+              <FieldLabel>附件</FieldLabel>
               <input
                 type="file"
                 multiple
@@ -209,23 +222,24 @@ export default function ComposeMailDialog({
               {attachments.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {attachments.map((attachment) => (
-                    <span key={`${attachment.filename}-${attachment.size}`} className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    <StatusTag key={`${attachment.filename}-${attachment.size}`}>
                       {attachment.filename} {attachment.size ? `· ${(attachment.size / 1024).toFixed(1)} KB` : ''}
-                    </span>
+                    </StatusTag>
                   ))}
                 </div>
               )}
             </div>
 
             <div className="flex justify-end gap-2">
-              <button
+              <Button
+                variant="outlined"
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="filled"
                 type="button"
                 disabled={disabled}
                 onClick={() => onSend({
@@ -237,10 +251,9 @@ export default function ComposeMailDialog({
                   text: text.trim(),
                   attachments,
                 })}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {sending ? '发送中...' : '发送邮件'}
-              </button>
+              </Button>
             </div>
           </div>
         )}

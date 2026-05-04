@@ -18,6 +18,9 @@ const tokens_1 = require("./tokens");
 const newspaper_1 = require("./newspaper");
 const os_1 = require("./os");
 const proxy_kernel_1 = require("./proxy-kernel");
+const codex_1 = require("./codex");
+const openteams_1 = require("./openteams");
+const crs_1 = require("./crs");
 const router = new koa_router_1.default({ prefix: '/api' });
 router.use('/accounts', accounts_1.accountRoutes.routes(), accounts_1.accountRoutes.allowedMethods());
 router.use('/mails', mails_1.mailRoutes.routes(), mails_1.mailRoutes.allowedMethods());
@@ -33,5 +36,8 @@ router.use('/tokens', tokens_1.tokenRoutes.routes(), tokens_1.tokenRoutes.allowe
 router.use('/newspaper', newspaper_1.newspaperRoutes.routes(), newspaper_1.newspaperRoutes.allowedMethods());
 router.use('/os', os_1.osRoutes.routes(), os_1.osRoutes.allowedMethods());
 router.use('/proxy-kernel', proxy_kernel_1.proxyKernelRoutes.routes(), proxy_kernel_1.proxyKernelRoutes.allowedMethods());
+router.use('/codex', codex_1.codexRoutes.routes(), codex_1.codexRoutes.allowedMethods());
+router.use('/openteams', openteams_1.openTeamsRoutes.routes(), openteams_1.openTeamsRoutes.allowedMethods());
+router.use('/crs', crs_1.crsRoutes.routes(), crs_1.crsRoutes.allowedMethods());
 exports.default = router;
 //# sourceMappingURL=index.js.map

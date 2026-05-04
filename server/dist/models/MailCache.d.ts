@@ -1,5 +1,8 @@
 import { MailMessage } from '../types';
 export declare class MailCacheModel {
+    private clampPage;
+    private clampPageSize;
+    private normalizeMailId;
     private mapMail;
     private parseAttachments;
     getByAccount(accountId: number, mailbox: string, page?: number, pageSize?: number): {
@@ -12,6 +15,18 @@ export declare class MailCacheModel {
     clearByAccount(accountId: number, mailbox: string): void;
     getRecent(limit?: number): MailMessage[];
     getRecentSummary(limit?: number): MailMessage[];
+    getUnified(page?: number, pageSize?: number): {
+        list: MailMessage[];
+        total: any;
+        page: number;
+        pageSize: number;
+    };
+    getUnifiedSummary(page?: number, pageSize?: number): {
+        list: MailMessage[];
+        total: any;
+        page: number;
+        pageSize: number;
+    };
     getRecentByAccounts(accountIds: number[], limit?: number): MailMessage[];
     search(accountId: number, mailbox: string, query: string, page?: number, pageSize?: number): {
         list: MailMessage[];

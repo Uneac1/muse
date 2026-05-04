@@ -8,11 +8,15 @@ export declare class TokenController {
     private normalizePayload;
     private validateAccount;
     private enrichPayload;
+    private findExistingCodexAccount;
+    private parseCodexCredentialFile;
     listAccounts(ctx: Context): Promise<void>;
     createAccount(ctx: Context): Promise<void>;
     updateAccount(ctx: Context): Promise<void>;
     deleteAccount(ctx: Context): Promise<void>;
     syncAccount(ctx: Context): Promise<void>;
     syncAll(ctx: Context): Promise<void>;
+    autoSync(ctx: Context): Promise<void>;
+    importCodexFree(ctx: Context): Promise<void>;
 }
 //# sourceMappingURL=TokenController.d.ts.map

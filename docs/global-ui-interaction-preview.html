@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Muse 全局 UI / 交互优化预览</title>
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #142031;
+      --card: rgba(255, 255, 255, 0.94);
+      --border: rgba(20, 32, 49, 0.10);
+      --muted: #dce5ef;
+      --muted-foreground: #6a7688;
+      --primary: #0f766e;
+      --primary-soft: rgba(15, 118, 110, 0.10);
+      --primary-border: rgba(15, 118, 110, 0.28);
+      --success: #16a34a;
+      --success-soft: rgba(22, 163, 74, 0.10);
+      --success-border: rgba(22, 163, 74, 0.28);
+      --warning: #d97706;
+      --warning-soft: rgba(217, 119, 6, 0.11);
+      --warning-border: rgba(217, 119, 6, 0.30);
+      --danger: #dc2626;
+      --danger-soft: rgba(220, 38, 38, 0.10);
+      --danger-border: rgba(220, 38, 38, 0.28);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --shadow-soft: 0 12px 28px rgba(20, 32, 49, 0.055);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--foreground);
+      font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 28%),
+        linear-gradient(180deg, #f8fafc, #eef3f8);
+    }
+
+    .app {
+      display: grid;
+      min-height: 100vh;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--card);
+      padding: 18px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 2px 4px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--muted-foreground);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .nav-section {
+      margin-top: 20px;
+    }
+
+    .nav-title {
+      padding: 0 6px 8px;
+      color: var(--muted-foreground);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      color: var(--muted-foreground);
+      font-size: 14px;
+    }
+
+    .nav-item.active {
+      border: 1px solid var(--primary-border);
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.88);
+      padding: 12px 22px;
+      backdrop-filter: blur(18px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      border: 1px solid var(--primary-border);
+      border-radius: 6px;
+      background: var(--primary-soft);
+      padding: 3px 8px;
+      color: var(--primary);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    h1 {
+      margin-top: 6px;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search {
+      display: flex;
+      min-width: 240px;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: rgba(248, 250, 252, 0.86);
+      padding: 9px 12px;
+      color: var(--muted-foreground);
+      font-size: 13px;
+    }
+
+    .key {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      padding: 2px 7px;
+      font-size: 10px;
+      letter-spacing: .08em;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      padding: 8px 12px;
+      color: var(--foreground);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--primary-border);
+      background: var(--primary-soft);
+    }
+
+    .btn.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn.quiet {
+      border-color: transparent;
+      background: transparent;
+      color: var(--primary);
+    }
+
+    .icon-btn {
+      width: 38px;
+      padding: 0;
+      color: var(--muted-foreground);
+    }
+
+    .content {
+      padding: 20px 22px 28px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero {
+      display: grid;
+      min-height: 304px;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--card);
+      box-shadow: var(--shadow-soft);
+      padding: 22px;
+    }
+
+    .hero-copy {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .hero-title {
+      margin-top: 10px;
+      max-width: 740px;
+      font-size: 34px;
+      line-height: 1.08;
+    }
+
+    .hero-text {
+      margin-top: 10px;
+      max-width: 680px;
+      color: var(--muted-foreground);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 5px 8px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: rgba(248, 250, 252, 0.72);
+      padding: 14px;
+    }
+
+    .metric-label {
+      color: var(--muted-foreground);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 8px;
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+    .metric-note {
+      margin-top: 4px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section-grid {
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, .75fr);
+      margin-top: 14px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--card);
+      padding: 18px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-title {
+      margin-top: 4px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .panel-meta {
+      margin-top: 4px;
+      color: var(--muted-foreground);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .task-anchor {
+      margin-top: 14px;
+      border: 1px solid var(--primary-border);
+      border-radius: var(--radius-md);
+      background: var(--primary-soft);
+      padding: 18px;
+    }
+
+    .task-title {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .task-summary {
+      margin-top: 8px;
+      color: var(--muted-foreground);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .fact {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.72);
+      padding: 10px;
+    }
+
+    .fact-label {
+      color: var(--muted-foreground);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .fact-value {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .tone-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .tone {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 13px;
+    }
+
+    .tone strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .tone.primary {
+      border-color: var(--primary-border);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .tone.success {
+      border-color: var(--success-border);
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .tone.warning {
+      border-color: var(--warning-border);
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .tone.danger {
+      border-color: var(--danger-border);
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: #eef3f8;
+      padding: 4px;
+    }
+
+    .segment {
+      min-height: 34px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted-foreground);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .segment.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 6px 16px rgba(20, 32, 49, 0.08);
+    }
+
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: rgba(248, 250, 252, 0.72);
+      padding: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .tag.success {
+      border-color: var(--success-border);
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .tag.primary {
+      border-color: var(--primary-border);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .tag.warning {
+      border-color: var(--warning-border);
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    @media (max-width: 1020px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .hero,
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .tone-row,
+      .facts {
+        grid-template-columns: 1fr;
+      }
+
+      .search {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .header {
+        align-items: flex-start;
+        padding: 12px 14px;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .hero-title {
+        font-size: 28px;
+      }
+
+      .toolbar .btn:not(.icon-btn) {
+        display: none;
+      }
+
+      .account-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <div class="brand-title">Muse</div>
+          <div class="brand-subtitle">Operating System</div>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">Control</div>
+        <div class="nav-item active">Today</div>
+        <div class="nav-item">Inbox</div>
+        <div class="nav-item">Codex</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">Resources</div>
+        <div class="nav-item">Tokens</div>
+        <div class="nav-item">Accounts</div>
+        <div class="nav-item">Proxy</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="header">
+        <div>
+          <span class="eyebrow">Daily Control</span>
+          <h1>Today</h1>
+        </div>
+        <div class="toolbar">
+          <button class="btn quiet">区块 AI</button>
+          <div class="search">
+            <span>搜索页面 / 执行动作</span>
+            <span class="key">/</span>
+          </div>
+          <button class="btn icon-btn" aria-label="theme">☼</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="hero">
+          <div class="hero-copy">
+            <div>
+              <span class="eyebrow">Today Focus</span>
+              <h2 class="hero-title">先处理 Codex 账号池风险，再推进 Inbox 中的高优动作</h2>
+              <p class="hero-text">首屏只保留一个主结论：现在先做什么。统计和补充信号都退到第二层，避免与主任务争夺注意力。</p>
+            </div>
+            <div>
+              <button class="btn primary">重新聚合</button>
+              <div class="chips" style="margin-top:12px">
+                <span class="chip">Inbox 8</span>
+                <span class="chip">Alerts 2</span>
+                <span class="chip">Memory 14</span>
+              </div>
+            </div>
+          </div>
+          <div class="status-grid">
+            <div class="metric">
+              <div class="metric-label">Inbox Queue</div>
+              <div class="metric-value">8</div>
+              <div class="metric-note">等待处理动作</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Alerts</div>
+              <div class="metric-value">2</div>
+              <div class="metric-note">异常与风险</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid section-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Codex Desktop Pool</span>
+                <h2 class="panel-title">当前账号可继续跑，首要任务是保持观察</h2>
+                <p class="panel-meta">稳定态使用 success，仍需用户操作或配置补齐时使用 primary。</p>
+              </div>
+              <span class="tag success">健康</span>
+            </div>
+
+            <div class="task-anchor">
+              <div class="task-title">自动切换模式</div>
+              <p class="task-summary">配置项需要明确区分“仅激活”和“激活并打开”，避免自动任务意外打开桌面应用。</p>
+              <div class="segmented" style="margin-top:14px">
+                <button class="segment active">仅激活</button>
+                <button class="segment">激活并打开</button>
+              </div>
+              <div class="facts">
+                <div class="fact">
+                  <div class="fact-label">当前账号</div>
+                  <div class="fact-value" style="color:var(--success)">Account 12</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">5 小时额度</div>
+                  <div class="fact-value" style="color:var(--success)">68%</div>
+                </div>
+                <div class="fact">
+                  <div class="fact-label">自动切换</div>
+                  <div class="fact-value" style="color:var(--primary)">已开启</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="account-row">
+              <div>
+                <strong>Codex Team Main</strong>
+                <div class="metric-note">xunac131@gmail.com</div>
+              </div>
+              <div class="chips">
+                <span class="tag primary">当前激活</span>
+                <span class="tag success">可继续</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div>
+                <strong>Codex Backup</strong>
+                <div class="metric-note">退避保护中，页面不重复请求</div>
+              </div>
+              <span class="tag warning">下次重试 16:58</span>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Semantic Tone</span>
+                <h2 class="panel-title">primary / success 必须可区分</h2>
+                <p class="panel-meta">成功态不再复用信息态，避免 OAuth 成功、健康状态和普通当前态混成同一种视觉语气。</p>
+              </div>
+            </div>
+            <div class="tone-row">
+              <div class="tone primary"><strong>Primary</strong>当前 / 信息 / 主操作</div>
+              <div class="tone success"><strong>Success</strong>健康 / 完成 / 可继续</div>
+              <div class="tone warning"><strong>Warning</strong>需确认 / 额度低</div>
+              <div class="tone danger"><strong>Danger</strong>失败 / 阻断</div>
+              <div class="tone"><strong>Neutral</strong>历史 / 说明</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

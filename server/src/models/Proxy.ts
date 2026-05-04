@@ -6,6 +6,23 @@ export class ProxyModel {
     return db.prepare('SELECT * FROM proxies ORDER BY id DESC').all() as Proxy[];
   }
 
+  countGroupedByStatus(): Array<{ status: string; count: number }> {
+    return db.prepare(`
+      SELECT status, COUNT(*) as count
+      FROM proxies
+      GROUP BY status
+    `).all() as Array<{ status: string; count: number }>;
+  }
+
+  getStats(): { total: number; active: number; statusStats: Array<{ status: string; count: number }> } {
+    const statusStats = this.countGroupedByStatus();
+    return {
+      total: statusStats.reduce((sum, item) => sum + item.count, 0),
+      active: statusStats.find((item) => item.status === 'active')?.count || 0,
+      statusStats,
+    };
+  }
+
   getById(id: number): Proxy | undefined {
     return db.prepare('SELECT * FROM proxies WHERE id = ?').get(id) as Proxy | undefined;
   }
@@ -52,5 +69,9 @@ export class ProxyModel {
 
   updateTestResult(id: number, ip: string, status: 'active' | 'failed') {
     db.prepare('UPDATE proxies SET last_tested_at = CURRENT_TIMESTAMP, last_test_ip = ?, status = ? WHERE id = ?').run(ip, status, id);
+  }
+
+  markFailed(id: number) {
+    db.prepare('UPDATE proxies SET last_tested_at = CURRENT_TIMESTAMP, status = ? WHERE id = ?').run('failed', id);
   }
 }

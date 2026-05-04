@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Muse UI Density Preview</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: rgba(255, 255, 255, 0.94);
+      --text: #182433;
+      --muted: #66758a;
+      --line: rgba(24, 36, 51, 0.08);
+      --primary: #0f766e;
+      --accent: #d97706;
+      --danger: #dc2626;
+      --soft: #eef3f8;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --shadow: 0 18px 40px rgba(24, 36, 51, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 24%),
+        linear-gradient(180deg, #f8fafc 0%, #f3f6fa 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1, h2 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+    }
+
+    .section-title {
+      margin: 8px 0 16px;
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .hero, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 20px;
+      min-height: 304px;
+      border-radius: var(--radius-lg);
+      padding: 24px 26px;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .summary {
+      max-width: 660px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .chip-row, .meta-list, .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip, .badge {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .chip {
+      background: #ecfdf5;
+      color: var(--primary);
+    }
+
+    .badge {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      min-height: 42px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 600;
+      background: white;
+      color: var(--text);
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .hero-side {
+      display: grid;
+      align-content: space-between;
+      gap: 16px;
+    }
+
+    .metric-box {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff 0%, #f8fbfd 100%);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .metric-box strong {
+      display: block;
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .metric-box span, .muted {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+      grid-template-columns: 1.2fr 1fr 1fr;
+    }
+
+    .panel {
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .row strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .danger {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .codex-anchor {
+      margin-top: 42px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .anchor-card {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 18px;
+      padding: 22px 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .anchor-card h2 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .anchor-meta {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (max-width: 1024px) {
+      .hero, .anchor-card, .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="section-title">Today First Screen</div>
+    <section class="hero">
+      <div>
+        <h1>今天先处理 3 个待重新同步账号，避免下午批量任务继续失败。</h1>
+        <div class="summary">Hero 压缩后只承担一个主结论、一句 AI 摘要和两级动作，不再塞入第二组大数字与冗长说明。首屏先把任务推到眼前，再让用户向下看 Inbox、异常和次级统计。</div>
+        <div class="action-row" style="margin-bottom:14px;">
+          <button class="btn primary">立即处理</button>
+          <button class="btn">查看异常清单</button>
+        </div>
+        <div class="chip-row">
+          <div class="chip">今日新增异常 4</div>
+          <div class="chip">最近同步 09:40</div>
+          <div class="badge">1 个高风险 token 今日过期</div>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="metric-box">
+          <strong>12</strong>
+          <span>待分类收件，建议优先处理 GitHub 与高优先报纸条目。</span>
+        </div>
+        <div class="metric-box">
+          <strong class="danger">3</strong>
+          <span>异常账号仍在影响自动化链路，主操作必须从这里进入。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Inbox</h2>
+        <div class="list">
+          <div class="row">
+            <div>
+              <strong>GitHub PR 需要确认回归风险</strong>
+              <div class="muted">10 分钟前 · repo/frontend</div>
+            </div>
+            <div class="badge">待处理</div>
+          </div>
+          <div class="row">
+            <div>
+              <strong>报纸高优先条目待归档</strong>
+              <div class="muted">20 分钟前 · newspaper</div>
+            </div>
+            <div class="badge">待分类</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Issues</h2>
+        <div class="list">
+          <div class="row">
+            <div>
+              <strong>1 个 token 今日过期</strong>
+              <div class="muted">影响 Codex 同步</div>
+            </div>
+            <div class="danger">Critical</div>
+          </div>
+          <div class="row">
+            <div>
+              <strong>代理链路抖动</strong>
+              <div class="muted">最近 24 小时失败率上升</div>
+            </div>
+            <div class="badge">Warning</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Next Step</h2>
+        <div class="list">
+          <div class="row">
+            <div>
+              <strong>进入 Token 页面批量同步</strong>
+              <div class="muted">主链路修复动作</div>
+            </div>
+            <button class="btn">前往</button>
+          </div>
+          <div class="row">
+            <div>
+              <strong>查看 AI 今日建议</strong>
+              <div class="muted">辅助决策，不占主视觉</div>
+            </div>
+            <button class="btn">查看</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-title" style="margin-top:42px;">Codex First Screen</div>
+    <section class="codex-anchor">
+      <div class="anchor-card">
+        <div>
+          <h2>3 个账号待重新同步，当前影响自动任务执行。</h2>
+          <div class="summary">`Codex` 首屏只保留一个主任务锚点。统计、状态与列表都为它服务，不再并列竞争第一层视觉权重。</div>
+          <div class="action-row">
+            <button class="btn primary">立即同步</button>
+            <button class="btn">查看全部账号</button>
+          </div>
+        </div>
+        <div class="anchor-meta">
+          <div class="metric-box">
+            <strong>High</strong>
+            <span>风险级别：批量任务已受影响</span>
+          </div>
+          <div class="metric-box">
+            <strong>09:42</strong>
+            <span>最近一次失败时间，可作为追查入口</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

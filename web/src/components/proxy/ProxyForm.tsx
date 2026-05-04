@@ -92,8 +92,6 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
     };
   }, [open]);
 
-  if (!open) return null;
-
   const miSubEntries = useMemo(() => {
     if (!miSubData?.connected) return [];
     const root = normalizeBaseUrl(miSubData.baseUrl);
@@ -114,6 +112,8 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
   }, [miSubData]);
 
   const selectedEntry = miSubEntries.find((item) => item.key === selectedMiSubEntry);
+
+  if (!open) return null;
 
   const importFromMiSub = () => {
     if (!selectedEntry) {
@@ -160,15 +160,15 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
   const labelCls = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="presentation" onClick={onClose}>
+      <div className="mx-4 max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl dark:bg-zinc-900" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4 text-zinc-900 dark:text-zinc-100">
           {proxy ? '编辑代理' : '添加代理'}
         </h2>
         <div className="space-y-3">
           <div>
             <label className={labelCls}>来源</label>
-            <div className="flex gap-4 mt-1">
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-2">
               {([
                 ['manual', '手动输入'],
                 ['misub', '订阅管理'],
@@ -189,7 +189,7 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
 
           {sourceMode === 'misub' && (
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">从订阅管理导入</div>
                   <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -255,8 +255,8 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="sm:col-span-2">
               <label className={labelCls}>主机</label>
               <input type="text" value={form.host} onChange={e => setForm(f => ({ ...f, host: e.target.value }))} className={inputCls} placeholder="127.0.0.1" />
             </div>
@@ -265,7 +265,7 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
               <input type="number" value={form.port} onChange={e => setForm(f => ({ ...f, port: Number(e.target.value) }))} className={inputCls} placeholder="1080" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className={labelCls}>用户名 <span className="text-zinc-400 font-normal">(可选)</span></label>
               <input type="text" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} className={inputCls} placeholder="用户名" />
@@ -279,9 +279,15 @@ export default function ProxyForm({ open, proxy, onClose, onSave }: Props) {
             <div
               role="switch"
               aria-checked={form.is_default}
+              aria-label="设为默认代理"
               tabIndex={0}
               onClick={() => setForm(f => ({ ...f, is_default: !f.is_default }))}
-              onKeyDown={e => e.key === 'Enter' && setForm(f => ({ ...f, is_default: !f.is_default }))}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setForm(f => ({ ...f, is_default: !f.is_default }));
+                }
+              }}
               className={`relative w-9 h-5 rounded-full transition-colors ${form.is_default ? 'bg-blue-600' : 'bg-zinc-300 dark:bg-zinc-600'}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.is_default ? 'translate-x-4' : ''}`} />

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertCircle, XCircle, Clock, Wifi, Cloud, Github } from 'lucide-react';
+import { AlertCircle, XCircle, Clock, Wifi, Cloud, Github, ChevronDown, Play, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { DashboardStats } from '../../types';
 
@@ -65,23 +65,29 @@ export function QuickActions({ stats }: Props) {
       <div className="px-5 py-4 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">快速操作</h2>
       </div>
-      <div className="p-4 grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
         {actions.map((action, i) => (
           <motion.button
             key={action.label}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.25, delay: 0.4 + i * 0.06 }}
             onClick={() => navigate(action.path)}
-            className="flex flex-col items-center gap-2 rounded-lg border border-border p-4 hover:bg-secondary/50 transition-colors group relative"
+            className="dynamic-block md3-state-layer quick-action-tile group relative flex min-h-[136px] flex-col items-center gap-2 rounded-lg border border-border p-4 text-center hover:bg-secondary/50"
           >
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg transition-transform group-hover:scale-110"
+              className="flex h-10 w-10 items-center justify-center rounded-lg transition-transform group-hover:scale-110 group-hover:rounded-2xl"
               style={{ backgroundColor: `${action.color}15` }}
             >
               <action.icon className="h-5 w-5" style={{ color: action.color }} />
             </div>
-            <span className="text-sm font-medium text-foreground">{action.label}</span>
+            <span className="line-clamp-2 text-sm font-medium leading-5 text-foreground">{action.label}</span>
+            <div className="quick-action-flow">
+              <span><Play className="h-3 w-3" /> Run</span>
+              <span><ChevronDown className="h-3 w-3" /> More</span>
+            </div>
 
             {action.count === 0 ? (
               <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
@@ -101,6 +107,10 @@ export function QuickActions({ stats }: Props) {
                 {action.count}
               </div>
             )}
+            <div className="quick-action-health">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span style={{ width: `${Math.min(100, Math.max(18, action.count * 14))}%` }} />
+            </div>
           </motion.button>
         ))}
       </div>

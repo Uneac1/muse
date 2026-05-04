@@ -4,5 +4,7 @@ export declare class ProxyKernelController {
     download(ctx: Context): Promise<void>;
     start(ctx: Context): Promise<void>;
     stop(ctx: Context): Promise<void>;
+    select(ctx: Context): Promise<void>;
+    testOpenAi(ctx: Context): Promise<void>;
 }
 //# sourceMappingURL=ProxyKernelController.d.ts.map

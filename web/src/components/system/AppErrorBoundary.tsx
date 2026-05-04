@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, Home, RefreshCw, RotateCcw } from 'lucide-react';
 
 interface State {
   hasError: boolean;
@@ -81,28 +82,29 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, S
     }
 
     return (
-      <div className="min-h-screen bg-zinc-100 px-6 py-10 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
-        <div className="mx-auto max-w-3xl rounded-[28px] border border-red-200 bg-white p-8 shadow-xl dark:border-red-900/40 dark:bg-zinc-900">
-          <div className="inline-flex rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs uppercase tracking-[0.24em] text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-            Runtime Error
+      <div className="muse-app-shell grid min-h-screen place-items-center px-5 py-10 text-foreground">
+        <div className="today-hero-card w-full max-w-4xl">
+          <div className="editorial-kicker">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Muse Error</span>
           </div>
-          <h1 className="mt-4 text-3xl font-semibold">页面没有正常渲染</h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-            这次没有再让应用直接白屏。错误已经被前端边界接住，你可以先恢复页面，再把下面的错误信息发给我继续追根因。
+          <h1 className="today-hero-title mt-7">页面没有正常渲染</h1>
+          <p className="today-hero-copy mt-7">
+            错误已经被前端边界接住。你可以先重新挂载当前页面；如果状态没有恢复，再刷新应用或回到仪表盘。
           </p>
 
-          <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="font-medium text-zinc-900 dark:text-zinc-100">错误信息</div>
-            <div className="mt-2 break-all text-red-600 dark:text-red-300">{this.state.message}</div>
+          <div className="mt-8 rounded-[14px] border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] p-4 text-sm">
+            <div className="font-medium text-foreground">错误信息</div>
+            <div className="mt-2 break-all text-destructive">{this.state.message}</div>
             {this.state.source && (
-              <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">错误来源：{this.state.source}</div>
+              <div className="mt-3 text-xs text-muted-foreground">错误来源：{this.state.source}</div>
             )}
           </div>
 
           {this.state.stack && (
-            <details className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs dark:border-zinc-800 dark:bg-zinc-950">
-              <summary className="cursor-pointer font-medium text-zinc-700 dark:text-zinc-300">查看堆栈</summary>
-              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all text-zinc-600 dark:text-zinc-400">
+            <details className="mt-4 rounded-[14px] border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] p-4 text-xs">
+              <summary className="cursor-pointer font-medium text-foreground">查看堆栈</summary>
+              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all text-muted-foreground">
                 {this.state.stack}
               </pre>
             </details>
@@ -111,20 +113,23 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, S
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               onClick={this.handleReset}
-              className="rounded-2xl border border-zinc-300 px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              className="md3-state-layer inline-flex items-center gap-2 rounded-[14px] border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground"
             >
+              <RotateCcw className="h-4 w-4" />
               重新挂载页面
             </button>
             <button
               onClick={this.handleReload}
-              className="rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm text-white transition hover:bg-zinc-800 dark:bg-cyan-500 dark:text-zinc-950 dark:hover:bg-cyan-400"
+              className="md3-state-layer inline-flex items-center gap-2 rounded-[14px] bg-primary px-4 py-2.5 text-sm text-primary-foreground"
             >
+              <RefreshCw className="h-4 w-4" />
               刷新应用
             </button>
             <a
               href="/dashboard"
-              className="rounded-2xl border border-zinc-300 px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              className="md3-state-layer inline-flex items-center gap-2 rounded-[14px] border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground"
             >
+              <Home className="h-4 w-4" />
               回到仪表盘
             </a>
           </div>

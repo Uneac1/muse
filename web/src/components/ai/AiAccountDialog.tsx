@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { authApi, oauthApi } from '../../lib/api';
+import { oauthApi } from '../../lib/api';
 import type { AiAccount, AiProvider } from '../../types';
 
-const GEMINI_OAUTH_SCOPE = 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/generative-language.retriever';
+const GEMINI_OAUTH_SCOPE = 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/generative-language.retriever openid email';
 
 const PROVIDER_PRESETS: Record<AiProvider, { label: string; baseUrl: string; model: string; hint: string; protocol: string; fallback?: string }> = {
   chatgpt: {
@@ -46,7 +46,7 @@ const PROVIDER_PRESETS: Record<AiProvider, { label: string; baseUrl: string; mod
   },
   gemini: {
     label: 'Gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1/models',
     model: 'gemini-2.5-flash',
     hint: '支持 API Key，也支持 Google OAuth 授权登录。',
     protocol: 'Gemini GenerateContent',
@@ -57,6 +57,14 @@ const PROVIDER_PRESETS: Record<AiProvider, { label: string; baseUrl: string; mod
     model: 'deepseek-chat',
     hint: 'DeepSeek 官方 API，默认 `deepseek-chat`。',
     protocol: 'OpenAI Chat Completions',
+  },
+  mimo: {
+    label: 'MiMo',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+    model: 'mimo-v2.5-pro',
+    hint: '小米 MiMo Dedicated API，默认使用 OpenAI 兼容 /v1 地址。',
+    protocol: 'OpenAI Chat Completions',
+    fallback: 'https://token-plan-cn.xiaomimimo.com/anthropic',
   },
   openai_compatible: {
     label: 'OpenAI兼容',
@@ -86,6 +94,71 @@ function getDefaultForm() {
   };
 }
 
+function parseGoogleClientJson(raw: string) {
+  const parsed = JSON.parse(raw) as any;
+  const client = parsed?.web || parsed?.installed || parsed;
+  if (!client?.client_id || !client?.client_secret) {
+    throw new Error('JSON 里没有找到 client_id / client_secret');
+  }
+
+  return {
+    clientId: String(client.client_id || '').trim(),
+    clientSecret: String(client.client_secret || '').trim(),
+    projectId: String(parsed?.project_id || client?.project_id || '').trim(),
+  };
+}
+
+function parseModels(raw?: string) {
+  if (!raw) return [];
+  try {
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data.map((item) => String(item)).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeModelName(model: string) {
+  return String(model || '').trim().toLowerCase().replace(/^models\//, '');
+}
+
+function inferProviderFromModel(provider: AiProvider, model: string): AiProvider {
+  const normalizedModel = normalizeModelName(model);
+
+  if (normalizedModel.startsWith('gemini')) return 'gemini';
+  if (normalizedModel.includes('claude') || normalizedModel.includes('anthropic')) {
+    return provider === 'claude' || provider === 'claude_code' || provider === 'anthropic_compatible'
+      ? provider
+      : 'anthropic_compatible';
+  }
+  if (normalizedModel.includes('codex') || /^gpt-5(?:[.-]|$)/i.test(normalizedModel)) return 'codex';
+  if (normalizedModel.startsWith('deepseek')) return 'deepseek';
+  if (normalizedModel.startsWith('mimo')) return 'mimo';
+  return provider;
+}
+
+function normalizeBaseUrlForProvider(baseUrl: string, provider: AiProvider) {
+  const preset = PROVIDER_PRESETS[provider];
+  const sanitized = String(baseUrl || '').trim().replace(/\/+$/, '');
+  if (!sanitized) return preset.baseUrl;
+
+  if (provider === 'gemini') {
+    if (/generativelanguage\.googleapis\.com/i.test(sanitized)) {
+      if (/\/models$/i.test(sanitized)) return sanitized;
+      if (/\/v\d+(?:beta)?$/i.test(sanitized)) return `${sanitized}/models`;
+      return preset.baseUrl;
+    }
+    return sanitized;
+  }
+
+  if (provider === 'claude' || provider === 'claude_code' || provider === 'anthropic_compatible') {
+    return sanitized.replace(/\/v1$/i, '') || preset.baseUrl;
+  }
+
+  if (/\/v1$/i.test(sanitized)) return sanitized;
+  return `${sanitized}/v1`;
+}
+
 interface Props {
   open: boolean;
   account: AiAccount | null;
@@ -94,11 +167,14 @@ interface Props {
 }
 
 export default function AiAccountDialog({ open, account, onClose, onSave }: Props) {
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState(getDefaultForm);
   const [saving, setSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [serverGoogleOAuthEnabled, setServerGoogleOAuthEnabled] = useState(false);
+  const [googleClientJson, setGoogleClientJson] = useState('');
+  const detectedModels = useMemo(() => parseModels(account?.available_models), [account?.available_models]);
 
   useEffect(() => {
     if (!open) return;
@@ -123,12 +199,39 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
       setForm(getDefaultForm());
     }
     setShowKey(false);
+    setGoogleClientJson('');
   }, [open, account]);
 
   useEffect(() => {
     if (!open) return;
-    authApi.check()
-      .then((result) => setServerGoogleOAuthEnabled(!!result.googleOAuthEnabled))
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    oauthApi.status()
+      .then((result) => {
+        setServerGoogleOAuthEnabled(!!result.googleConfigured);
+        if (result.googleProjectId) {
+          setForm((current) => ({
+            ...current,
+            oauth_project_id: current.oauth_project_id || result.googleProjectId,
+          }));
+        }
+      })
       .catch(() => setServerGoogleOAuthEnabled(false));
   }, [open]);
 
@@ -162,6 +265,8 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
   }, [open]);
 
   const preset = PROVIDER_PRESETS[form.provider];
+  const inferredProvider = useMemo(() => inferProviderFromModel(form.provider, form.model), [form.model, form.provider]);
+  const inferredPreset = PROVIDER_PRESETS[inferredProvider];
   const isGemini = form.provider === 'gemini';
   const supportsGoogleOAuth = isGemini;
   const isGoogleOAuth = isGemini && form.auth_mode === 'google_oauth';
@@ -199,6 +304,23 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
     }));
   };
 
+  const applyModelSelection = (model: string) => {
+    const nextProvider = inferProviderFromModel(form.provider, model);
+    const shouldReplaceBaseUrl =
+      !form.base_url.trim() ||
+      form.base_url.replace(/\/+$/, '') === preset.baseUrl.replace(/\/+$/, '');
+
+    setForm((current) => ({
+      ...current,
+      provider: nextProvider,
+      auth_mode: nextProvider === 'gemini' ? current.auth_mode : 'api_key',
+      model,
+      base_url: shouldReplaceBaseUrl
+        ? PROVIDER_PRESETS[nextProvider].baseUrl
+        : normalizeBaseUrlForProvider(current.base_url, nextProvider),
+    }));
+  };
+
   const launchGoogleOAuth = async () => {
     if (!serverGoogleOAuthEnabled && (!form.oauth_client_id.trim() || !form.oauth_client_secret.trim())) {
       toast.error('先填写 Google OAuth Client ID 和 Client Secret');
@@ -227,10 +349,31 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
     }
   };
 
+  const applyGoogleClientJson = () => {
+    try {
+      const parsed = parseGoogleClientJson(googleClientJson);
+      setForm((current) => ({
+        ...current,
+        oauth_client_id: parsed.clientId,
+        oauth_client_secret: parsed.clientSecret,
+        oauth_project_id: current.oauth_project_id || parsed.projectId,
+      }));
+      toast.success('已从 Google OAuth JSON 自动提取 Client ID / Secret');
+    } catch (error: any) {
+      toast.error(error.message || '解析 Google OAuth JSON 失败');
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave(form);
+      const nextProvider = inferProviderFromModel(form.provider, form.model);
+      await onSave({
+        ...form,
+        provider: nextProvider,
+        auth_mode: nextProvider === 'gemini' ? form.auth_mode : 'api_key',
+        base_url: normalizeBaseUrlForProvider(form.base_url, nextProvider),
+      });
       onClose();
     } finally {
       setSaving(false);
@@ -238,8 +381,14 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4 animate-[fadeIn_0.2s_ease-out]" onClick={onClose}>
-      <div className="w-full max-w-3xl rounded-[28px] border border-zinc-200/70 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/95 animate-[slideUp_0.2s_ease-out]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-black/55 px-3 py-3 animate-[fadeIn_0.2s_ease-out] sm:px-4 sm:py-5" onClick={onClose}>
+      <div className="flex h-full items-center justify-center">
+        <div
+          ref={dialogRef}
+          className="flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col overflow-hidden rounded-[24px] border border-zinc-200/70 bg-white/95 shadow-2xl backdrop-blur-xl animate-[slideUp_0.2s_ease-out] sm:max-h-[calc(100dvh-40px)] sm:rounded-[28px] dark:border-zinc-800 dark:bg-zinc-950/95"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="overflow-y-auto p-4 sm:p-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-cyan-600 dark:text-cyan-400">AI Account</p>
@@ -290,6 +439,11 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
         <div className="mt-4 rounded-3xl border border-cyan-200/70 bg-cyan-50/80 p-4 text-sm text-cyan-900 dark:border-cyan-900/60 dark:bg-cyan-950/20 dark:text-cyan-100">
           <div className="font-medium">{preset.label} 预设</div>
           <div className="mt-1 text-cyan-800/80 dark:text-cyan-100/80">{preset.hint}</div>
+          {inferredProvider !== form.provider && (
+            <div className="mt-3 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+              当前模型更适合按 {inferredPreset.label} / {inferredPreset.protocol} 发送。保存时会自动切换协议和 Base URL。
+            </div>
+          )}
           <div className="mt-3 grid gap-2 md:grid-cols-2">
             <div className="rounded-2xl border border-cyan-200/70 bg-white/70 px-3 py-2 text-xs text-cyan-900 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-100">
               协议：{preset.protocol}
@@ -358,24 +512,47 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
           {isGoogleOAuth && (
             <div className="space-y-4 rounded-3xl border border-emerald-200/70 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
               {needsManualGoogleClient ? (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Google Client ID</label>
-                    <input
-                      value={form.oauth_client_id}
-                      onChange={(e) => setForm((current) => ({ ...current, oauth_client_id: e.target.value }))}
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900"
-                      placeholder="Google OAuth Desktop Client ID"
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Google OAuth Client JSON</label>
+                    <textarea
+                      value={googleClientJson}
+                      onChange={(e) => setGoogleClientJson(e.target.value)}
+                      rows={4}
+                      className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900"
+                      placeholder='可直接粘贴 Google 下载的凭据 JSON，例如 {"web":{"client_id":"...","client_secret":"..."}}'
                     />
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={applyGoogleClientJson}
+                        disabled={!googleClientJson.trim()}
+                        className="rounded-2xl border border-zinc-200 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        从 JSON 自动填充
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Google Client Secret</label>
-                    <input
-                      value={form.oauth_client_secret}
-                      onChange={(e) => setForm((current) => ({ ...current, oauth_client_secret: e.target.value }))}
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900"
-                      placeholder="Google OAuth Desktop Client Secret"
-                    />
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Google Client ID</label>
+                      <input
+                        value={form.oauth_client_id}
+                        onChange={(e) => setForm((current) => ({ ...current, oauth_client_id: e.target.value }))}
+                        className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900"
+                        placeholder="Google OAuth Desktop/Web Client ID"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Google Client Secret</label>
+                      <input
+                        value={form.oauth_client_secret}
+                        onChange={(e) => setForm((current) => ({ ...current, oauth_client_secret: e.target.value }))}
+                        className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900"
+                        placeholder="Google OAuth Client Secret"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -415,7 +592,7 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                  授权 scope：`cloud-platform` + `generative-language.retriever`
+                  授权 scope：`cloud-platform` + `generative-language.retriever` + `openid email`
                 </div>
                 <button
                   type="button"
@@ -429,7 +606,7 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-[1.3fr_1fr]">
+          <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Base URL</label>
               <input
@@ -444,14 +621,66 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
                 </div>
               )}
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">模型</label>
-              <input
-                value={form.model}
-                onChange={(e) => setForm((current) => ({ ...current, model: e.target.value }))}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-                placeholder={preset.model}
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">当前模型</label>
+                <input
+                  value={form.model}
+                  onChange={(e) => applyModelSelection(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                  placeholder={preset.model}
+                />
+              </div>
+
+              <div className="rounded-3xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">已探测模型</div>
+                    <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      {detectedModels.length > 0 ? `已缓存 ${detectedModels.length} 个模型，可直接选用。` : '这个账号还没缓存模型，先在工作台里点一次“测试连接”。'}
+                    </div>
+                  </div>
+                  <div className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                    {detectedModels.length} 个
+                  </div>
+                </div>
+
+                {detectedModels.length > 0 && (
+                  <>
+                    <div className="mt-3">
+                      <select
+                        value={detectedModels.includes(form.model) ? form.model : ''}
+                        onChange={(e) => {
+                          if (!e.target.value) return;
+                          applyModelSelection(e.target.value);
+                        }}
+                        className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                      >
+                        <option value="">从已探测模型中选择</option>
+                        {detectedModels.map((model) => (
+                          <option key={model} value={model}>{model}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mt-3 flex max-h-36 flex-wrap gap-2 overflow-auto">
+                      {detectedModels.map((model) => (
+                        <button
+                          key={model}
+                          type="button"
+                          onClick={() => applyModelSelection(model)}
+                          className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                            form.model === model
+                              ? 'border-cyan-400 bg-cyan-500 text-white dark:border-cyan-400 dark:bg-cyan-500 dark:text-zinc-950'
+                              : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          {model}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -488,6 +717,8 @@ export default function AiAccountDialog({ open, account, onClose, onSave }: Prop
           >
             {saving ? '保存中...' : account ? '保存修改' : '添加账号'}
           </button>
+        </div>
+          </div>
         </div>
       </div>
     </div>

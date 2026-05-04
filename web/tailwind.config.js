@@ -18,8 +18,9 @@ export default {
         ring: 'var(--ring)',
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Cormorant Garamond"', 'Garamond', 'serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
         lg: '16px',

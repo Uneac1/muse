@@ -16,6 +16,43 @@ const GOOGLE_IDENTITY_SCOPE = 'openid email';
 const ipv4HttpsAgent = new https_1.default.Agent({ family: 4 });
 const execFileAsync = (0, util_1.promisify)(child_process_1.execFile);
 const GOOGLE_API_HOST_RE = /^https:\/\/(?:oauth2|www)\.googleapis\.com\//;
+const POWERSHELL_EXE = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+function isProxyTransportError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    const causeMessage = String(error?.cause?.message || '').toLowerCase();
+    const code = String(error?.code || error?.cause?.code || '').toUpperCase();
+    const detail = `${message} ${causeMessage} ${code}`.trim();
+    return [
+        'econrefused',
+        'econnreset',
+        'ehostunreach',
+        'enetunreach',
+        'etimedout',
+        'proxy',
+        'connect refused',
+    ].some((pattern) => detail.includes(pattern));
+}
+function getProxyOriginParts(value) {
+    try {
+        const parsed = new URL(value);
+        return {
+            hostname: parsed.hostname.toLowerCase(),
+            port: Number(parsed.port || (parsed.protocol === 'https:' ? 443 : 80)),
+        };
+    }
+    catch {
+        return null;
+    }
+}
+function shouldStripProxyEnv(envValue, failedProxy) {
+    if (!envValue || !failedProxy?.host || !failedProxy?.port)
+        return false;
+    const current = getProxyOriginParts(envValue);
+    if (!current)
+        return false;
+    return current.hostname === String(failedProxy.host).toLowerCase()
+        && current.port === Number(failedProxy.port);
+}
 function decodeJwtPayload(token) {
     if (!token)
         return null;
@@ -31,6 +68,17 @@ function decodeJwtPayload(token) {
         return null;
     }
 }
+function mergeGoogleScopes(scope) {
+    const tokens = new Set(String(scope || '')
+        .split(/\s+/)
+        .map((item) => item.trim())
+        .filter(Boolean));
+    for (const item of GOOGLE_IDENTITY_SCOPE.split(/\s+/)) {
+        if (item)
+            tokens.add(item);
+    }
+    return Array.from(tokens).join(' ');
+}
 class OAuthService {
     createResponse(status, body) {
         return {
@@ -40,7 +88,7 @@ class OAuthService {
             json: async () => JSON.parse(body),
         };
     }
-    async powershellRequest(method, url, body = '', headers = {}) {
+    async powershellRequest(method, url, body = '', headers = {}, failedProxy) {
         const script = `
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -68,16 +116,28 @@ try {
   $status = [int]$response.StatusCode
   $content = [string]$response.Content
 } catch {
-  if ($_.Exception.Response) {
-    $status = [int]$_.Exception.Response.StatusCode
-    $stream = $_.Exception.Response.GetResponseStream()
-    if ($stream) {
-      $reader = New-Object System.IO.StreamReader($stream)
-      $content = $reader.ReadToEnd()
-    } elseif ($_.ErrorDetails -and $_.ErrorDetails.Message) {
-      $content = [string]$_.ErrorDetails.Message
+  $response = $_.Exception.Response
+  if ($response) {
+    if ($response -is [System.Net.Http.HttpResponseMessage]) {
+      $status = [int]$response.StatusCode
+      if ($response.Content) {
+        $content = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+      } elseif ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $content = [string]$_.ErrorDetails.Message
+      } else {
+        $content = [string]$_.Exception.Message
+      }
     } else {
-      $content = [string]$_.Exception.Message
+      $status = [int]$response.StatusCode
+      $stream = $response.GetResponseStream()
+      if ($stream) {
+        $reader = New-Object System.IO.StreamReader($stream)
+        $content = $reader.ReadToEnd()
+      } elseif ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $content = [string]$_.ErrorDetails.Message
+      } else {
+        $content = [string]$_.Exception.Message
+      }
     }
   } else {
     throw
@@ -93,7 +153,12 @@ $result = @{ status = $status; body = $content } | ConvertTo-Json -Compress
             REQ_BODY: body,
             REQ_HEADERS: JSON.stringify(headers),
         };
-        const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], {
+        for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy']) {
+            if (shouldStripProxyEnv(env[key], failedProxy)) {
+                delete env[key];
+            }
+        }
+        const { stdout } = await execFileAsync(POWERSHELL_EXE, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], {
             env,
             windowsHide: true,
             timeout: 30000,
@@ -105,7 +170,8 @@ $result = @{ status = $status; body = $content } | ConvertTo-Json -Compress
         return this.createResponse(result.status, result.body || '');
     }
     async postForm(url, body, proxyId) {
-        const { agent, dispatcher, type } = proxyService.getAgent(proxyId);
+        const transport = proxyService.getAgent(proxyId);
+        const { agent, dispatcher, type, proxy } = transport;
         try {
             if (!type && process.platform === 'win32' && GOOGLE_API_HOST_RE.test(url)) {
                 return this.powershellRequest('POST', url, body, { 'Content-Type': 'application/x-www-form-urlencoded' });
@@ -137,15 +203,34 @@ $result = @{ status = $status; body = $content } | ConvertTo-Json -Compress
             });
         }
         catch (err) {
+            if (type && isProxyTransportError(err)) {
+                logger_1.default.warn(`OAuth POST failed through proxy for ${url}, retrying direct: ${err.message || 'Unknown error'}`);
+                if (proxy?.id) {
+                    proxyService.markFailed(proxy.id);
+                }
+                try {
+                    const nodefetch = require('node-fetch');
+                    return await nodefetch(url, {
+                        method: 'POST',
+                        agent: ipv4HttpsAgent,
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body,
+                    });
+                }
+                catch (directErr) {
+                    logger_1.default.warn(`OAuth POST direct retry failed for ${url}: ${directErr.message || 'Unknown error'}`);
+                }
+            }
             if (process.platform === 'win32' && GOOGLE_API_HOST_RE.test(url)) {
                 logger_1.default.warn(`Node POST failed for ${url}, retrying with PowerShell: ${err.message || 'Unknown error'}`);
-                return this.powershellRequest('POST', url, body, { 'Content-Type': 'application/x-www-form-urlencoded' });
+                return this.powershellRequest('POST', url, body, { 'Content-Type': 'application/x-www-form-urlencoded' }, proxy);
             }
             throw new Error(`POST ${url} failed: ${err.message || 'Unknown error'}`);
         }
     }
     async getJson(url, accessToken, proxyId) {
-        const { agent, dispatcher, type } = proxyService.getAgent(proxyId);
+        const transport = proxyService.getAgent(proxyId);
+        const { agent, dispatcher, type, proxy } = transport;
         try {
             if (!type && process.platform === 'win32' && GOOGLE_API_HOST_RE.test(url)) {
                 return this.powershellRequest('GET', url, '', {
@@ -174,12 +259,28 @@ $result = @{ status = $status; body = $content } | ConvertTo-Json -Compress
             });
         }
         catch (err) {
+            if (type && isProxyTransportError(err)) {
+                logger_1.default.warn(`OAuth GET failed through proxy for ${url}, retrying direct: ${err.message || 'Unknown error'}`);
+                if (proxy?.id) {
+                    proxyService.markFailed(proxy.id);
+                }
+                try {
+                    const nodefetch = require('node-fetch');
+                    return await nodefetch(url, {
+                        agent: ipv4HttpsAgent,
+                        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                    });
+                }
+                catch (directErr) {
+                    logger_1.default.warn(`OAuth GET direct retry failed for ${url}: ${directErr.message || 'Unknown error'}`);
+                }
+            }
             if (process.platform === 'win32' && GOOGLE_API_HOST_RE.test(url)) {
                 logger_1.default.warn(`Node GET failed for ${url}, retrying with PowerShell: ${err.message || 'Unknown error'}`);
                 return this.powershellRequest('GET', url, '', {
                     Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
-                });
+                }, proxy);
             }
             throw new Error(`GET ${url} failed: ${err.message || 'Unknown error'}`);
         }
@@ -238,7 +339,7 @@ $result = @{ status = $status; body = $content } | ConvertTo-Json -Compress
             access_type: 'offline',
             prompt: options?.prompt || 'consent',
             include_granted_scopes: 'true',
-            scope: options?.scope || `${GOOGLE_MAIL_SCOPE} ${GOOGLE_IDENTITY_SCOPE}`,
+            scope: mergeGoogleScopes(options?.scope || GOOGLE_MAIL_SCOPE),
             state,
         });
         if (loginHint)

@@ -1,10 +1,20 @@
 import { Context } from 'koa';
 import { AccountModel } from '../models/Account';
 import { TagModel } from '../models/Tag';
+import { config } from '../config';
 import { success, fail } from '../utils/response';
 
 const model = new AccountModel();
 const tagModel = new TagModel();
+
+function parsePositiveInt(value: unknown, fallback: number) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
 
 export class AccountController {
   constructor() {
@@ -32,7 +42,17 @@ export class AccountController {
     return 'microsoft';
   }
 
+  private resolveGmailCredentials(body: any) {
+    return {
+      client_id: String(body.client_id || config.googleClientId || '').trim(),
+      client_secret: String(body.client_secret || config.googleClientSecret || '').trim(),
+      refresh_token: String(body.refresh_token || '').trim(),
+    };
+  }
+
   private validateAccountPayload(body: any, provider: string, isPartial = false): string | null {
+    const gmailCredentials = provider === 'gmail' ? this.resolveGmailCredentials(body) : null;
+
     if (!isPartial) {
       if (!body.email) {
         return 'Missing required field: email';
@@ -40,6 +60,10 @@ export class AccountController {
 
       if (provider === 'qq') {
         if (!body.password) return 'Missing required fields: email, password';
+      } else if (provider === 'gmail') {
+        if (!gmailCredentials?.refresh_token || !gmailCredentials.client_id) {
+          return 'Missing required fields: email, client_id, refresh_token';
+        }
       } else if (!body.client_id || !body.refresh_token) {
         return 'Missing required fields: email, client_id, refresh_token';
       }
@@ -50,7 +74,11 @@ export class AccountController {
     }
 
     if (provider === 'gmail') {
-      const hasClientSecret = isPartial ? body.client_secret !== undefined ? !!body.client_secret : true : !!body.client_secret;
+      const hasClientSecret = isPartial
+        ? body.client_secret !== undefined
+          ? !!gmailCredentials?.client_secret
+          : true
+        : !!gmailCredentials?.client_secret;
       if (!hasClientSecret) return 'Gmail account requires client_secret';
     }
 
@@ -73,18 +101,23 @@ export class AccountController {
 
   async list(ctx: Context) {
     const { page = '1', pageSize = '20', search = '' } = ctx.query as Record<string, string>;
-    const data = model.list(parseInt(page), parseInt(pageSize), search);
+    const safePage = parsePositiveInt(page, 1);
+    const safePageSize = clamp(parsePositiveInt(pageSize, 20), 1, 100);
+    const data = model.list(safePage, safePageSize, search);
     success(ctx, data);
   }
 
   async create(ctx: Context) {
     const body = ctx.request.body as any;
     const provider = this.normalizeProvider(body);
-    const validationError = this.validateAccountPayload(body, provider);
+    const payload = provider === 'gmail'
+      ? { ...body, ...this.resolveGmailCredentials(body), provider }
+      : { ...body, provider };
+    const validationError = this.validateAccountPayload(payload, provider);
     if (validationError) return fail(ctx, validationError, 400);
 
     try {
-      const account = model.create({ ...body, provider });
+      const account = model.create(payload);
       success(ctx, account);
     } catch (err: any) {
       if (err.message?.includes('UNIQUE')) return fail(ctx, 'Email already exists', 409);
@@ -99,10 +132,17 @@ export class AccountController {
     if (!current) return fail(ctx, 'Account not found', 404);
 
     const provider = this.normalizeProvider({ ...current, ...body });
-    const validationError = this.validateAccountPayload({ ...current, ...body }, provider, true);
+    const mergedBody = { ...current, ...body };
+    const payload = provider === 'gmail'
+      ? { ...mergedBody, ...this.resolveGmailCredentials(mergedBody), provider }
+      : { ...mergedBody, provider };
+    const validationError = this.validateAccountPayload(payload, provider, true);
     if (validationError) return fail(ctx, validationError, 400);
 
-    const account = model.update(id, { ...body, provider });
+    const updatePayload = provider === 'gmail'
+      ? { ...body, ...this.resolveGmailCredentials(mergedBody), provider }
+      : { ...body, provider };
+    const account = model.update(id, updatePayload);
     if (!account) return fail(ctx, 'Account not found', 404);
     success(ctx, account);
   }

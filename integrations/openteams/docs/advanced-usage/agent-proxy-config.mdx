@@ -1,0 +1,89 @@
+---
+title: "Agent Proxy Configuration"
+description: "Configure different models for your agents when the built-in model options do not cover your setup."
+sidebarTitle: "Agent Proxy Configuration"
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+## Add an agent configuration
+
+If your agent supports a new model, or the model you want to use is not available in the built-in configuration, you can add a new model configuration at the agent level.
+
+(openteams CLI model settings are automatically synced from the configured provider models, so you do not need to enter those manually.)
+
+<Steps>
+<Step>
+Open `Settings -> Agents`.
+
+![Open agent settings](../images/en/agent_setting.png)
+</Step>
+
+<Step>
+Select the agent you want to configure, then click the `+` button to add a configuration.
+
+![Add an agent configuration](../images/en/add_agent_config.png)
+</Step>
+
+<Step>
+Create a new configuration and enter a configuration name.
+
+![Create a new configuration](../images/en/new_config.png)
+</Step>
+
+<Step>
+Fill in the configuration details. The most important field is the **model name**. It must be correct, otherwise the agent will not be able to access the model.
+
+![Fill in the configuration](../images/en/fill_config.png)
+</Step>
+</Steps>
+

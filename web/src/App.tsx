@@ -4,27 +4,27 @@ import { Toaster } from 'sonner';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginDialog } from './components/auth/LoginDialog';
 import { AppErrorBoundary } from './components/system/AppErrorBoundary';
-import { authApi } from './lib/api';
+import { authApi, crsApi } from './lib/api';
 import { readCacheState, removeCache, writeCache } from './lib/localCache';
 import type { AuthCheckResult } from './types';
 import {
   AccountsPage,
   AiStudioPage,
   CloudflareManagerPage,
+  CodexManagerPage,
+  ComponentShowcasePage,
   DashboardPage,
-  EntitiesPage,
   GitHubManagerPage,
   InboxPage,
+  LinuxDoManagerPage,
   MemoryPage,
   NewspaperPage,
   NewspaperReaderPage,
+  OpenTeamsPage,
   NotionManagerPage,
   ProxySettingsPage,
-  RulesPage,
   SubscriptionManagerPage,
-  TokenAnalyticsPage,
   TodayPage,
-  warmCriticalRoutes,
   YmailManagerPage,
 } from './lib/pageRegistry';
 
@@ -83,15 +83,16 @@ export default function App() {
       setShowLogin(true);
     };
     window.addEventListener('auth-required', handleAuthRequired);
-    const cancelWarmup = scheduleIdleTask(() => {
-      void warmCriticalRoutes();
-    });
-
     return () => {
       window.removeEventListener('auth-required', handleAuthRequired);
       cancelAuthCheck();
-      cancelWarmup();
     };
+  }, []);
+
+  useEffect(() => {
+    return scheduleIdleTask(() => {
+      void crsApi.status().catch(() => undefined);
+    });
   }, []);
 
   const checkAuth = async () => {
@@ -129,22 +130,33 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/today" element={renderLazyPage(TodayPage)} />
             <Route path="/inbox" element={renderLazyPage(InboxPage)} />
-            <Route path="/entities" element={renderLazyPage(EntitiesPage)} />
-            <Route path="/rules" element={renderLazyPage(RulesPage)} />
+            <Route path="/entities" element={<Navigate to="/today" replace />} />
+            <Route path="/rules" element={<Navigate to="/memory" replace />} />
             <Route path="/memory" element={renderLazyPage(MemoryPage)} />
             <Route path="/dashboard" element={renderLazyPage(DashboardPage)} />
             <Route path="/accounts" element={renderLazyPage(AccountsPage)} />
             <Route path="/ai" element={renderLazyPage(AiStudioPage)} />
-            <Route path="/tokens" element={renderLazyPage(TokenAnalyticsPage)} />
+            <Route path="/tokens" element={<Navigate to="/codex" replace />} />
+            <Route path="/codex" element={renderLazyPage(CodexManagerPage)} />
+            <Route path="/openteams" element={renderLazyPage(OpenTeamsPage)} />
+            <Route path="/components" element={renderLazyPage(ComponentShowcasePage)} />
+            <Route path="/components/material" element={<Navigate to="/components" replace />} />
+            <Route path="/components/google-design" element={<Navigate to="/components" replace />} />
+            <Route path="/openteam" element={<Navigate to="/openteams" replace />} />
+            <Route path="/opteam" element={<Navigate to="/openteams" replace />} />
+            <Route path="/agent-workspace" element={<Navigate to="/openteams" replace />} />
+            <Route path="/open-agents" element={<Navigate to="/openteams" replace />} />
             <Route path="/proxy" element={renderLazyPage(ProxySettingsPage)} />
             <Route path="/cloudflare" element={renderLazyPage(CloudflareManagerPage)} />
             <Route path="/github" element={renderLazyPage(GitHubManagerPage)} />
+            <Route path="/linuxdo" element={renderLazyPage(LinuxDoManagerPage)} />
             <Route path="/notion" element={renderLazyPage(NotionManagerPage)} />
             <Route path="/ymail" element={renderLazyPage(YmailManagerPage)} />
             <Route path="/subscriptions" element={renderLazyPage(SubscriptionManagerPage)} />
             <Route path="/newspaper" element={renderLazyPage(NewspaperPage)} />
             <Route path="/newspaper/read" element={renderLazyPage(NewspaperReaderPage)} />
             <Route path="/" element={<Navigate to="/today" replace />} />
+            <Route path="*" element={<Navigate to="/today" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>

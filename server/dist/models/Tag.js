@@ -45,6 +45,24 @@ class TagModel {
       ORDER BY t.name
     `).all(accountId);
     }
+    getTagsByAccountIds(accountIds) {
+        const ids = [...new Set(accountIds.filter((id) => Number.isFinite(id) && id > 0))];
+        if (!ids.length)
+            return {};
+        const placeholders = ids.map(() => '?').join(',');
+        const rows = database_1.default.prepare(`
+      SELECT at.account_id as account_id, t.*
+      FROM account_tags at
+      JOIN tags t ON t.id = at.tag_id
+      WHERE at.account_id IN (${placeholders})
+      ORDER BY at.account_id, t.name
+    `).all(...ids);
+        return rows.reduce((acc, row) => {
+            const { account_id, ...tag } = row;
+            (acc[account_id] ||= []).push(tag);
+            return acc;
+        }, {});
+    }
     setAccountTags(accountId, tagIds) {
         const del = database_1.default.prepare('DELETE FROM account_tags WHERE account_id = ?');
         const ins = database_1.default.prepare('INSERT OR IGNORE INTO account_tags (account_id, tag_id) VALUES (?, ?)');

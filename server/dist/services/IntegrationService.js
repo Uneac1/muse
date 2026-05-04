@@ -1,10 +1,20 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IntegrationService = void 0;
 const snapshotCache_1 = require("../utils/snapshotCache");
+const logger_1 = __importDefault(require("../utils/logger"));
+const LinuxDoConnectService_1 = require("./LinuxDoConnectService");
 class IntegrationService {
+    linuxDoConnectService = new LinuxDoConnectService_1.LinuxDoConnectService();
     cache = new Map();
     inflight = new Map();
+    notionInsightsSampleLimit = 48;
+    externalRequestConcurrency = 4;
+    notionSearchPageLimit = 10;
+    notionContentPageLimit = 20;
     maskToken(token) {
         if (!token)
             return '';
@@ -96,7 +106,7 @@ class IntegrationService {
             const cached = this.getCached(key);
             if (cached)
                 return cached;
-            const snapshot = (0, snapshotCache_1.getSnapshot)(key, ttlMs);
+            const snapshot = (0, snapshotCache_1.getSnapshot)(key);
             if (snapshot)
                 return this.setCached(key, snapshot, ttlMs);
             const inflight = this.inflight.get(key);
@@ -179,25 +189,26 @@ class IntegrationService {
     }
     async fetchGitHubRepoExtras(token, repos) {
         const targets = repos.filter((repo) => !repo.archived).slice(0, 25);
+        const loadForTargets = (loader) => this.mapWithConcurrency(targets, this.externalRequestConcurrency, (repo) => this.safeRequest(() => loader(repo), []));
         const [issueGroups, pullGroups, releaseGroups, branchGroups] = await Promise.all([
-            Promise.all(targets.map((repo) => this.safeRequest(async () => {
+            loadForTargets(async (repo) => {
                 const items = await this.fetchGitHubPaged(`/repos/${repo.full_name}/issues?state=open&sort=updated`, token);
                 return items
                     .filter((item) => !item.pull_request)
                     .map((item) => ({ ...item, repo_full_name: repo.full_name }));
-            }, []))),
-            Promise.all(targets.map((repo) => this.safeRequest(async () => {
+            }),
+            loadForTargets(async (repo) => {
                 const items = await this.fetchGitHubPaged(`/repos/${repo.full_name}/pulls?state=open&sort=updated`, token);
                 return items.map((item) => ({ ...item, repo_full_name: repo.full_name }));
-            }, []))),
-            Promise.all(targets.map((repo) => this.safeRequest(async () => {
+            }),
+            loadForTargets(async (repo) => {
                 const items = await this.fetchGitHubPaged(`/repos/${repo.full_name}/releases`, token);
                 return items.map((item) => ({ ...item, repo_full_name: repo.full_name }));
-            }, []))),
-            Promise.all(targets.map((repo) => this.safeRequest(async () => {
+            }),
+            loadForTargets(async (repo) => {
                 const items = await this.fetchGitHubPaged(`/repos/${repo.full_name}/branches`, token);
                 return items.map((item) => ({ ...item, repo_full_name: repo.full_name })).slice(0, 20);
-            }, []))),
+            }),
         ]);
         return {
             issues: issueGroups.flat().slice(0, 200),
@@ -239,7 +250,7 @@ class IntegrationService {
             results.push(...response.results);
             cursor = response.has_more ? response.next_cursor || undefined : undefined;
             guard += 1;
-        } while (cursor && guard < 100);
+        } while (cursor && guard < this.notionSearchPageLimit);
         return results;
     }
     async fetchNotionBlockChildrenAll(token, blockId) {
@@ -255,7 +266,7 @@ class IntegrationService {
             results.push(...response.results);
             cursor = response.has_more ? response.next_cursor || undefined : undefined;
             guard += 1;
-        } while (cursor && guard < 100);
+        } while (cursor && guard < this.notionContentPageLimit);
         return results;
     }
     extractNotionBlockText(item) {
@@ -350,12 +361,12 @@ class IntegrationService {
     }
     async fetchReadableNotionBlocks(token, blockId, depth = 0) {
         const rawBlocks = await this.fetchNotionBlockChildrenAll(token, blockId);
-        const blocks = await Promise.all(rawBlocks.map(async (item) => {
+        const blocks = await this.mapWithConcurrency(rawBlocks, this.externalRequestConcurrency, async (item) => {
             const children = item.has_children && depth < 2
                 ? await this.safeRequest(() => this.fetchReadableNotionBlocks(token, item.id, depth + 1), [])
                 : [];
             return this.summarizeReadableNotionBlock(item, children);
-        }));
+        });
         return blocks;
     }
     async fetchNotionPageBlocks(token, pages) {
@@ -398,12 +409,12 @@ class IntegrationService {
             results.push(...response.results);
             cursor = response.has_more ? response.next_cursor || undefined : undefined;
             guard += 1;
-        } while (cursor && guard < 100);
+        } while (cursor && guard < this.notionContentPageLimit);
         return results;
     }
     async fetchCloudflareZoneDetails(token, zones) {
         const targets = zones.slice(0, 50);
-        const results = await Promise.all(targets.map(async (zone) => {
+        const results = await this.mapWithConcurrency(targets, this.externalRequestConcurrency, async (zone) => {
             const records = await this.safeRequest(() => this.fetchCloudflarePaged(`/zones/${zone.id}/dns_records`, token), []);
             return {
                 zoneId: zone.id,
@@ -411,20 +422,20 @@ class IntegrationService {
                 proxiedRecordCount: records.filter((record) => !!record.proxied).length,
                 records,
             };
-        }));
+        });
         return results;
     }
     async fetchCloudflarePagesProjects(token, accounts) {
-        const results = await Promise.all(accounts.slice(0, 20).map((account) => this.safeRequest(() => this.fetchCloudflarePaged(`/accounts/${account.id}/pages/projects`, token), [])));
+        const results = await this.mapWithConcurrency(accounts.slice(0, 20), this.externalRequestConcurrency, (account) => this.safeRequest(() => this.fetchCloudflarePaged(`/accounts/${account.id}/pages/projects`, token), []));
         return results.flat();
     }
     async fetchCloudflareWorkerScripts(token, accounts) {
-        const results = await Promise.all(accounts.slice(0, 20).map((account) => this.safeRequest(() => this.fetchCloudflarePaged(`/accounts/${account.id}/workers/scripts`, token), [])));
+        const results = await this.mapWithConcurrency(accounts.slice(0, 20), this.externalRequestConcurrency, (account) => this.safeRequest(() => this.fetchCloudflarePaged(`/accounts/${account.id}/workers/scripts`, token), []));
         return results.flat();
     }
     async fetchCloudflareRulesets(token, accounts, zones) {
-        const accountRulesets = await Promise.all(accounts.slice(0, 20).map((account) => this.safeRequest(() => this.fetchCloudflarePaged(`/accounts/${account.id}/rulesets`, token), [])));
-        const zoneRulesets = await Promise.all(zones.slice(0, 50).map((zone) => this.safeRequest(() => this.fetchCloudflarePaged(`/zones/${zone.id}/rulesets`, token), [])));
+        const accountRulesets = await this.mapWithConcurrency(accounts.slice(0, 20), this.externalRequestConcurrency, (account) => this.safeRequest(() => this.fetchCloudflarePaged(`/accounts/${account.id}/rulesets`, token), []));
+        const zoneRulesets = await this.mapWithConcurrency(zones.slice(0, 50), this.externalRequestConcurrency, (zone) => this.safeRequest(() => this.fetchCloudflarePaged(`/zones/${zone.id}/rulesets`, token), []));
         return [...accountRulesets.flat(), ...zoneRulesets.flat()];
     }
     async fetchGitHubData(record, options) {
@@ -528,20 +539,52 @@ class IntegrationService {
             };
         });
     }
+    async fetchLinuxDoData(record, options) {
+        const session = this.linuxDoConnectService.parseSessionRecord(record.token);
+        if (!session?.accessToken) {
+            throw new Error('Linux.do 会话数据无效，请重新授权');
+        }
+        return this.withCache(this.cacheKey('linuxdo-summary', session.accessToken), 3 * 60 * 1000, !!options?.force, async () => {
+            let activeSession = session;
+            let user = session.user || null;
+            if (session.expiresAt && new Date(session.expiresAt).getTime() <= Date.now() && session.refreshToken) {
+                const refreshed = await this.linuxDoConnectService.refreshToken(session.refreshToken);
+                user = await this.linuxDoConnectService.fetchCurrentUser(refreshed.access_token);
+                activeSession = this.linuxDoConnectService.buildSessionRecord(refreshed, user);
+            }
+            else if (!user || !!options?.force) {
+                user = await this.linuxDoConnectService.fetchCurrentUser(session.accessToken);
+                activeSession = { ...session, user };
+            }
+            return {
+                connected: true,
+                clientConfigured: this.linuxDoConnectService.isConfigured(),
+                tokenMasked: this.maskToken(activeSession.accessToken),
+                lastSyncAt: record.updated_at,
+                expiresAt: activeSession.expiresAt,
+                scopes: activeSession.scope,
+                user,
+            };
+        });
+    }
     async fetchNotionInsights(record, options) {
         const token = record.token;
-        return this.withCache(this.cacheKey('notion-insights', token), 3 * 60 * 1000, !!options?.force, async () => {
+        return this.withCache(this.cacheKey('notion-insights', token, `sample-${this.notionInsightsSampleLimit}`), 3 * 60 * 1000, !!options?.force, async () => {
             const summary = await this.fetchNotionData(record, options);
-            const blocks = await this.fetchNotionPageBlocks(token, summary.pages);
+            const recentEditedPages = [...summary.pages]
+                .sort((a, b) => new Date(b.last_edited_time).getTime() - new Date(a.last_edited_time).getTime());
+            const sampledPages = recentEditedPages.slice(0, this.notionInsightsSampleLimit);
+            const blocks = await this.fetchNotionPageBlocks(token, sampledPages);
+            const pageTitleMap = new Map(sampledPages.map((item) => [item.id, item.title]));
             const countByType = new Map();
             const countByPage = new Map();
             for (const block of blocks) {
                 countByType.set(block.type, (countByType.get(block.type) || 0) + 1);
                 countByPage.set(block.parentPageId, (countByPage.get(block.parentPageId) || 0) + 1);
             }
-            return {
+            const result = {
                 totalBlocks: blocks.length,
-                sampledPages: summary.pages.length,
+                sampledPages: sampledPages.length,
                 blockTypeCounts: [...countByType.entries()]
                     .map(([type, count]) => ({ type, count }))
                     .sort((a, b) => b.count - a.count),
@@ -549,12 +592,11 @@ class IntegrationService {
                     .map(([pageId, count]) => ({
                     pageId,
                     count,
-                    title: summary.pages.find((item) => item.id === pageId)?.title || 'Untitled page',
+                    title: pageTitleMap.get(pageId) || 'Untitled page',
                 }))
                     .sort((a, b) => b.count - a.count)
                     .slice(0, 20),
-                recentEditedPages: [...summary.pages]
-                    .sort((a, b) => new Date(b.last_edited_time).getTime() - new Date(a.last_edited_time).getTime())
+                recentEditedPages: recentEditedPages
                     .slice(0, 20)
                     .map((item) => ({
                     pageId: item.id,
@@ -562,6 +604,8 @@ class IntegrationService {
                     lastEditedTime: item.last_edited_time,
                 })),
             };
+            logger_1.default.info(`Notion insights sampled ${sampledPages.length}/${summary.pages.length} pages and ${blocks.length} blocks`);
+            return result;
         });
     }
     async fetchNotionPageContent(record, pageId) {

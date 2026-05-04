@@ -2,6 +2,7 @@ import { Account, PaginatedResponse, ImportRequest, ImportResult } from '../type
 export declare class AccountModel {
     list(page?: number, pageSize?: number, search?: string): PaginatedResponse<Account>;
     getById(id: number): Account | undefined;
+    getByIdBasic(id: number): Account | undefined;
     create(data: Partial<Account>): Account;
     update(id: number, data: Partial<Account>): Account | undefined;
     delete(id: number): boolean;
@@ -20,5 +21,6 @@ export declare class AccountModel {
     updateTokenRefreshTime(id: number, newRefreshToken?: string): void;
     markError(id: number): void;
     getAll(): Account[];
+    getAllBasic(): Account[];
 }
 //# sourceMappingURL=Account.d.ts.map

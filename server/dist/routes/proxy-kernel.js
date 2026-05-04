@@ -13,4 +13,6 @@ exports.proxyKernelRoutes.get('/status', ctrl.status);
 exports.proxyKernelRoutes.post('/download', ctrl.download);
 exports.proxyKernelRoutes.post('/start', ctrl.start);
 exports.proxyKernelRoutes.post('/stop', ctrl.stop);
+exports.proxyKernelRoutes.post('/select', ctrl.select);
+exports.proxyKernelRoutes.post('/test-openai', ctrl.testOpenAi);
 //# sourceMappingURL=proxy-kernel.js.map

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Mail, Clock, Inbox, AlertTriangle } from 'lucide-react';
+import { Mail, Clock, Inbox, AlertTriangle, Archive, Bell, ChevronDown } from 'lucide-react';
 import { timeAgo, getInitials, getAvatarColor } from '../../lib/utils';
 import type { MailMessage } from '../../types';
 
@@ -11,8 +11,10 @@ function MailItem({ mail, index }: { mail: MailMessage; index: number }) {
     <motion.div
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
+      whileHover={{ x: 4, scale: 1.005 }}
+      whileTap={{ scale: 0.985 }}
       transition={{ duration: 0.25, delay: index * 0.04 }}
-      className="flex items-center gap-3 rounded-md px-3 py-2.5 hover:bg-secondary/50 transition-colors"
+      className="md3-state-layer flex items-start gap-3 rounded-md px-3 py-2.5 hover:bg-secondary/50 sm:items-center"
     >
       <div
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
@@ -22,7 +24,7 @@ function MailItem({ mail, index }: { mail: MailMessage; index: number }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium text-foreground truncate">
+          <p className="min-w-0 truncate text-sm font-medium text-foreground">
             {mail.sender_name || mail.sender}
           </p>
           <span className="text-[11px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
@@ -35,14 +37,25 @@ function MailItem({ mail, index }: { mail: MailMessage; index: number }) {
         </p>
       </div>
       <span
-        className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${
           mail.mailbox === 'INBOX'
             ? 'bg-primary/10 text-primary'
             : 'bg-amber-500/10 text-amber-500'
         }`}
       >
-        {mail.mailbox === 'INBOX' ? '收件箱' : '垃圾箱'}
+        {mail.mailbox === 'INBOX' ? '收件' : '垃圾'}
       </span>
+      <div className="recent-mail-actions hidden sm:flex" aria-label="Mail quick actions">
+        <button type="button" title="提醒">
+          <Bell className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" title="归档">
+          <Archive className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" title="更多">
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </motion.div>
   );
 }
@@ -65,9 +78,9 @@ export function RecentMails({ mails }: { mails: MailMessage[] }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.35 }}
-      className="glass-card flex flex-col"
+      className="dynamic-block glass-card flex flex-col"
     >
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Mail className="h-4 w-4 text-primary" />
           最近邮件

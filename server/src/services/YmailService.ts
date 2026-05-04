@@ -31,6 +31,9 @@ interface YmailMailListResponse {
   [key: string]: any;
 }
 
+const YMAIL_ADDRESS_PAGE_SIZE_MAX = 100;
+const YMAIL_MAIL_PAGE_SIZE_MAX = 50;
+
 export class YmailService {
   private cache = new Map<string, { expiresAt: number; value: unknown }>();
   private inflight = new Map<string, Promise<unknown>>();
@@ -82,7 +85,7 @@ export class YmailService {
       const cached = this.getCached<T>(key);
       if (cached) return cached;
 
-      const snapshot = getSnapshot<T>(key, ttlMs);
+      const snapshot = getSnapshot<T>(key);
       if (snapshot) return this.setCached(key, snapshot, ttlMs);
 
       const inflight = this.inflight.get(key) as Promise<T> | undefined;
@@ -196,9 +199,11 @@ export class YmailService {
     adminPassword: string,
     params: { limit?: number; offset?: number; query?: string; sortBy?: string; sortOrder?: string } = {}
   ): Promise<{ results: YmailAddressSummary[]; count: number }> {
+    const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 50) || 50, YMAIL_ADDRESS_PAGE_SIZE_MAX));
+    const offset = Math.max(0, Math.trunc(params.offset ?? 0) || 0);
     const search = new URLSearchParams();
-    search.set('limit', String(params.limit ?? 50));
-    search.set('offset', String(params.offset ?? 0));
+    search.set('limit', String(limit));
+    search.set('offset', String(offset));
     if (params.query) search.set('query', params.query);
     if (params.sortBy) search.set('sort_by', params.sortBy);
     if (params.sortOrder) search.set('sort_order', params.sortOrder);
@@ -264,9 +269,11 @@ export class YmailService {
   }
 
   async fetchAddressMails(jwt: string, params: { limit?: number; offset?: number } = {}): Promise<{ results: YmailMailSummary[]; count: number }> {
+    const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 20) || 20, YMAIL_MAIL_PAGE_SIZE_MAX));
+    const offset = Math.max(0, Math.trunc(params.offset ?? 0) || 0);
     const search = new URLSearchParams();
-    search.set('limit', String(params.limit ?? 20));
-    search.set('offset', String(params.offset ?? 0));
+    search.set('limit', String(limit));
+    search.set('offset', String(offset));
     const result = await this.request<YmailMailListResponse>(`/api/mails?${search.toString()}`, { jwt });
     return {
       results: Array.isArray(result?.results) ? result.results : [],
@@ -284,8 +291,8 @@ export class YmailService {
     params: { limit?: number; offset?: number } = {},
     options?: { force?: boolean }
   ): Promise<{ jwt: string; address: string; results: YmailMailSummary[]; count: number }> {
-    const limit = params.limit ?? 20;
-    const offset = params.offset ?? 0;
+    const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 20) || 20, YMAIL_MAIL_PAGE_SIZE_MAX));
+    const offset = Math.max(0, Math.trunc(params.offset ?? 0) || 0);
     return this.withCache(this.cacheKey('ymail-mails', record.token, `${id}:${limit}:${offset}`), 20 * 1000, !!options?.force, async () => {
       const credential = await this.showAddressCredential(record.token, id);
       const [mailbox, mails] = await Promise.all([

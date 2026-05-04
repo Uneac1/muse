@@ -2,6 +2,7 @@ import { Context } from 'koa';
 export declare class AccountController {
     constructor();
     private normalizeProvider;
+    private resolveGmailCredentials;
     private validateAccountPayload;
     list(ctx: Context): Promise<void>;
     create(ctx: Context): Promise<void>;

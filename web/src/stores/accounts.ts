@@ -137,7 +137,10 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
   },
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
-  setSearchQuery: (q) => { set({ searchQuery: q }); get().fetchAccounts({ silent: true }); },
+  setSearchQuery: (q) => {
+    set(s => ({ searchQuery: q, pagination: { ...s.pagination, page: 1 } }));
+    get().fetchAccounts({ silent: true });
+  },
   setPage: (page) => { set(s => ({ pagination: { ...s.pagination, page } })); get().fetchAccounts({ silent: true }); },
   setPageSize: (size) => { set(s => ({ pagination: { ...s.pagination, pageSize: size, page: 1 } })); get().fetchAccounts({ silent: true }); },
 }));

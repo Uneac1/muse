@@ -34,7 +34,7 @@ export default function RecentMailPanel({
   onOpenMail,
 }: RecentMailPanelProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="account-recent-panel overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex flex-col gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">最近邮件</h2>
@@ -42,7 +42,7 @@ export default function RecentMailPanel({
             显示全部邮箱最近 5 条邮件，自动轮询更新，并标明来源邮箱。
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
             自动刷新 30 秒
           </span>
@@ -85,7 +85,7 @@ export default function RecentMailPanel({
               key={`${mail.account_id}-${mail.id}-${mail.mail_id}`}
               type="button"
               onClick={() => onOpenMail(mail)}
-              className="block w-full px-5 py-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-950/40"
+              className="account-mail-row block w-full px-5 py-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-950/40"
             >
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div className="min-w-0 flex-1">

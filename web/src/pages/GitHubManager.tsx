@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -19,6 +19,7 @@ import {
   Building2,
   Lock,
 } from 'lucide-react';
+import { EmptyState, SectionCard } from '../components/ui/patterns';
 import { integrationApi } from '../lib/api';
 import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import { timeAgo } from '../lib/utils';
@@ -42,29 +43,13 @@ const emptyState: GitHubIntegrationData = {
 const GITHUB_CACHE_KEY = 'muse.integration.github';
 const cachedGitHub = readIntegrationCache<GitHubIntegrationData>(GITHUB_CACHE_KEY);
 
-function SectionCard({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          {sub && <p className="text-sm text-muted-foreground">{sub}</p>}
-        </div>
-      </div>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
 function RepoList({ title, items, emptyText }: { title: string; items: GitHubRepository[]; emptyText: string }) {
   const visibleItems = items.slice(0, 60);
   return (
     <SectionCard title={title} sub={items.length > visibleItems.length ? `${items.length} 条记录 · 先渲染最近 ${visibleItems.length} 条` : `${items.length} 条记录`}>
       <div className="space-y-3">
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-background/40 px-5 py-12 text-center text-sm text-muted-foreground">
-            {emptyText}
-          </div>
+          <EmptyState text={emptyText} />
         ) : (
           visibleItems.map((repo) => (
             <div key={repo.id} className="rounded-2xl border border-border bg-background/40 p-4">
@@ -111,13 +96,9 @@ function RepoList({ title, items, emptyText }: { title: string; items: GitHubRep
   );
 }
 
-function SimpleGrid<T>({ items, emptyText, render }: { items: T[]; emptyText: string; render: (item: T) => React.ReactNode }) {
+function SimpleGrid<T>({ items, emptyText, render }: { items: T[]; emptyText: string; render: (item: T) => ReactNode }) {
   if (items.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border bg-background/40 px-5 py-12 text-center text-sm text-muted-foreground">
-        {emptyText}
-      </div>
-    );
+    return <EmptyState text={emptyText} />;
   }
 
   return <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{items.map(render)}</div>;

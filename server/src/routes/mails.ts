@@ -12,3 +12,4 @@ mailRoutes.post('/send', ctrl.send);
 mailRoutes.get('/search', ctrl.search);
 mailRoutes.delete('/clear', ctrl.clear);
 mailRoutes.get('/cached', ctrl.cached);
+mailRoutes.get('/unified', ctrl.unified.bind(ctrl));

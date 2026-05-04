@@ -9,6 +9,7 @@ export declare class TagModel {
     }): Tag | undefined;
     delete(id: number): boolean;
     getTagsByAccountId(accountId: number): Tag[];
+    getTagsByAccountIds(accountIds: number[]): Record<number, Tag[]>;
     setAccountTags(accountId: number, tagIds: number[]): void;
 }
 //# sourceMappingURL=Tag.d.ts.map

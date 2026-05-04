@@ -59,9 +59,10 @@ class AccountModel {
         }
         const total = database_1.default.prepare(`SELECT COUNT(*) as c FROM accounts ${where}`).get(...params).c;
         const list = database_1.default.prepare(`SELECT * FROM accounts ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...params, pageSize, offset);
+        const tagsByAccountId = tagModel.getTagsByAccountIds(list.map((acc) => acc.id));
         const listWithTags = list.map(acc => ({
             ...acc,
-            tags: tagModel.getTagsByAccountId(acc.id),
+            tags: tagsByAccountId[acc.id] || [],
         }));
         return { list: listWithTags, total, page, pageSize };
     }
@@ -70,6 +71,9 @@ class AccountModel {
         if (!acc)
             return undefined;
         return { ...acc, tags: tagModel.getTagsByAccountId(acc.id) };
+    }
+    getByIdBasic(id) {
+        return database_1.default.prepare('SELECT * FROM accounts WHERE id = ?').get(id);
     }
     create(data) {
         const stmt = database_1.default.prepare(`
@@ -116,6 +120,7 @@ class AccountModel {
         const newItems = [];
         const duplicates = [];
         const errors = [];
+        const existingStmt = database_1.default.prepare('SELECT id FROM accounts WHERE email = ?');
         for (let i = 0; i < lines.length; i++) {
             const parts = lines[i].split(separator);
             const record = {};
@@ -126,7 +131,7 @@ class AccountModel {
                 errors.push(validationError);
                 continue;
             }
-            const existing = database_1.default.prepare('SELECT id FROM accounts WHERE email = ?').get(record.email);
+            const existing = existingStmt.get(record.email);
             const item = { line: i + 1, ...record };
             if (existing)
                 duplicates.push(item);
@@ -153,6 +158,7 @@ class AccountModel {
           updated_at = CURRENT_TIMESTAMP
       WHERE email = ?
     `);
+        const existingStmt = database_1.default.prepare('SELECT id FROM accounts WHERE email = ?');
         const transaction = database_1.default.transaction(() => {
             for (let i = 0; i < lines.length; i++) {
                 const parts = lines[i].split(separator);
@@ -164,7 +170,7 @@ class AccountModel {
                     errors.push(validationError);
                     continue;
                 }
-                const existing = database_1.default.prepare('SELECT id FROM accounts WHERE email = ?').get(record.email);
+                const existing = existingStmt.get(record.email);
                 if (existing) {
                     if (mode === 'overwrite') {
                         updateStmt.run(record.provider, record.mode || 'long_term', record.password || '', record.client_id || '', record.client_secret || '', record.refresh_token || '', record.custom_imap_host || '', record.custom_imap_port || 993, record.custom_smtp_host || '', record.custom_smtp_port || 465, record.custom_smtp_secure || 1, record.custom_domain || '', record.email);
@@ -244,6 +250,14 @@ class AccountModel {
             .run('error', id);
     }
     getAll() {
+        const list = database_1.default.prepare('SELECT * FROM accounts ORDER BY id DESC').all();
+        const tagsByAccountId = tagModel.getTagsByAccountIds(list.map((acc) => acc.id));
+        return list.map(acc => ({
+            ...acc,
+            tags: tagsByAccountId[acc.id] || [],
+        }));
+    }
+    getAllBasic() {
         return database_1.default.prepare('SELECT * FROM accounts ORDER BY id DESC').all();
     }
 }

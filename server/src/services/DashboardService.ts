@@ -18,8 +18,8 @@ export class DashboardService {
       return this.cachedStats;
     }
 
-    const accounts = accountModel.getAll();
-    const proxies = proxyModel.list();
+    const accounts = accountModel.getAllBasic();
+    const proxyStats = proxyModel.getStats();
     const recentMails = cacheModel.getRecentSummary(5);
     const mailboxCounts = cacheModel.countGroupedByMailbox();
     const inboxCountsByAccount = new Map(cacheModel.countGroupedByAccount('INBOX').map((item) => [item.account_id, item.count]));
@@ -54,11 +54,11 @@ export class DashboardService {
       activeAccounts: accounts.filter(a => a.status === 'active').length,
       totalInboxMails: mailboxCountMap.get('INBOX') || 0,
       totalJunkMails: mailboxCountMap.get('Junk') || 0,
-      totalProxies: proxies.length,
-      activeProxies: proxies.filter(p => p.status === 'active').length,
+      totalProxies: proxyStats.total,
+      activeProxies: proxyStats.active,
       providerStats: groupCount(accounts, 'provider'),
       statusStats: groupCount(accounts, 'status'),
-      proxyStatusStats: groupCount(proxies, 'status'),
+      proxyStatusStats: proxyStats.statusStats,
       recentMails,
       accountStats,
       topMailAccounts,

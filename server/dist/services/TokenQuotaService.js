@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TokenQuotaService = void 0;
 const OpenAIAccountService_1 = require("./OpenAIAccountService");
+const TokenAccountRefreshService_1 = require("./TokenAccountRefreshService");
 const DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36';
 const DEFAULT_ANALYTICS_URLS = {
     openai_codex: 'https://chatgpt.com/codex/cloud/settings/analytics',
@@ -104,6 +105,9 @@ function parseSessionPayload(sessionPayload, format) {
         return payload;
     }
     return payload;
+}
+function isOpenAiRefreshBlockedError(message) {
+    return /unsupported_country_region_territory|Country, region, or territory not supported|身份验证错误|unknown_error|forbidden|403/i.test(message);
 }
 function extractUsageSections(text) {
     const sections = [];
@@ -230,9 +234,22 @@ class TokenQuotaService {
                 };
             }
             if ((authMethod === 'oauth' || authMethod === 'manual') && (account.refresh_token || account.access_token)) {
-                const tokenInfo = account.refresh_token
-                    ? await openAIAccountService.refreshToken(account.refresh_token)
-                    : openAIAccountService.parseTokenInfo(account.access_token, account.refresh_token, account.id_token);
+                let tokenInfo;
+                if (account.refresh_token) {
+                    try {
+                        tokenInfo = await (0, TokenAccountRefreshService_1.refreshOpenAITokenAccount)(account);
+                    }
+                    catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        if (!account.access_token || !isOpenAiRefreshBlockedError(message)) {
+                            throw error;
+                        }
+                        tokenInfo = openAIAccountService.parseTokenInfo(account.access_token, account.refresh_token, account.id_token);
+                    }
+                }
+                else {
+                    tokenInfo = openAIAccountService.parseTokenInfo(account.access_token, account.refresh_token, account.id_token);
+                }
                 return openAIAccountService.fetchWhamSnapshot(sourceUrl, tokenInfo.accessToken || account.access_token, account.external_account_id || tokenInfo.chatgptAccountId);
             }
         }

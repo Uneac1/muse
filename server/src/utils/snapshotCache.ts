@@ -3,7 +3,7 @@ import path from 'path';
 
 type SnapshotStore = Record<string, { updatedAt: number; value: unknown }>;
 
-const snapshotPath = path.resolve(process.cwd(), 'data', 'integration-snapshots.json');
+const snapshotPath = path.resolve(__dirname, '../../data/integration-snapshots.json');
 
 function readStore(): SnapshotStore {
   try {
@@ -23,9 +23,10 @@ function writeStore(store: SnapshotStore) {
   }
 }
 
-export function getSnapshot<T>(key: string, maxAgeMs: number): T | null {
+export function getSnapshot<T>(key: string, maxAgeMs?: number): T | null {
   const entry = readStore()[key];
-  if (!entry || Date.now() - entry.updatedAt > maxAgeMs) return null;
+  if (!entry) return null;
+  if (typeof maxAgeMs === 'number' && Date.now() - entry.updatedAt > maxAgeMs) return null;
   return entry.value as T;
 }
 

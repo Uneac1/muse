@@ -1,5 +1,7 @@
 import { FetchMailsResult } from '../types';
 export declare class MailService {
+    private forEachWithConcurrency;
+    private resolveGmailCredentials;
     private getEffectiveProvider;
     private fetchCustomMails;
     private fetchQqMails;

@@ -1,0 +1,197 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g., v1.2.3)'
+        required: true
+      release_id:
+        description: 'GitHub release ID (optional; use only numeric release id)'
+        required: false
+
+concurrency:
+  group: publish
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.13.1
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.release.prerelease == false && !startsWith(github.event.release.tag_name, 'remote-'))
+    steps:
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ref=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "release_tag=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "release_id=${{ inputs.release_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "release_tag=${{ github.event.release.tag_name || github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "release_id=${{ github.event.release.id }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.meta.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@latest
+
+      - name: Download release assets
+        uses: actions/github-script@v8
+        env:
+          RELEASE_ID: ${{ steps.meta.outputs.release_id }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const releaseIdRaw = (process.env.RELEASE_ID || '').trim();
+            const releaseTag = (process.env.RELEASE_TAG || '').trim();
+
+            let release;
+            if (context.payload.release?.id && Array.isArray(context.payload.release.assets)) {
+              release = context.payload.release;
+            } else if (context.payload.release?.id) {
+              release = (
+                await github.rest.repos.getRelease({
+                  owner,
+                  repo,
+                  release_id: Number(context.payload.release.id)
+                })
+              ).data;
+            } else if (/^\d+$/.test(releaseIdRaw)) {
+              release = (
+                await github.rest.repos.getRelease({
+                  owner,
+                  repo,
+                  release_id: Number(releaseIdRaw)
+                })
+              ).data;
+            } else {
+              const tagForLookup = releaseTag || releaseIdRaw;
+              if (!tagForLookup) {
+                core.setFailed('No valid release identifier found. Provide tag_name or numeric release_id.');
+                return;
+              }
+              release = (
+                await github.rest.repos.getReleaseByTag({
+                  owner,
+                  repo,
+                  tag: tagForLookup
+                })
+              ).data;
+            }
+
+            const tgzAsset = release.assets.find((asset) => asset.name.endsWith('.tgz'));
+            if (!tgzAsset) {
+              core.setFailed('No .tgz file found in release assets');
+              return;
+            }
+
+            const response = await github.rest.repos.getReleaseAsset({
+              owner,
+              repo,
+              asset_id: tgzAsset.id,
+              headers: {
+                Accept: 'application/octet-stream'
+              }
+            });
+
+            fs.mkdirSync('npx/openteams-npx', { recursive: true });
+            const filePath = path.join('npx/openteams-npx', tgzAsset.name);
+            fs.writeFileSync(filePath, Buffer.from(response.data));
+
+            console.log(`Downloaded ${tgzAsset.name} to ${filePath}`);
+            core.setOutput('package-name', tgzAsset.name);
+
+      - name: Verify package integrity
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd npx/openteams-npx
+
+          ls -la *.tgz
+          npm pack --dry-run || echo 'Dry-run pack check reported differences (non-blocking).'
+
+          PACKAGE_FILE=$(ls *.tgz | head -n1)
+          echo "package-file=$PACKAGE_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd npx/openteams-npx
+
+          PACKAGE_FILE='${{ steps.verify.outputs.package-file }}'
+          echo "Publishing $PACKAGE_FILE to npm..."
+          npm publish "$PACKAGE_FILE" --provenance --access public
+
+      - name: Update release description
+        uses: actions/github-script@v8
+        env:
+          RELEASE_ID: ${{ steps.meta.outputs.release_id }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const releaseIdRaw = (process.env.RELEASE_ID || '').trim();
+            const releaseTag = (process.env.RELEASE_TAG || '').trim();
+
+            let release;
+            if (context.payload.release) {
+              release = context.payload.release;
+            } else if (/^\d+$/.test(releaseIdRaw)) {
+              release = (
+                await github.rest.repos.getRelease({
+                  owner,
+                  repo,
+                  release_id: Number(releaseIdRaw)
+                })
+              ).data;
+            } else {
+              const tagForLookup = releaseTag || releaseIdRaw;
+              if (!tagForLookup) {
+                core.setFailed('No valid release identifier found when updating release notes.');
+                return;
+              }
+              release = (
+                await github.rest.repos.getReleaseByTag({
+                  owner,
+                  repo,
+                  tag: tagForLookup
+                })
+              ).data;
+            }
+
+            const currentBody = release.body || '';
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: release.id,
+              body: currentBody + '\n\nPublished to npm registry'
+            });

@@ -6,9 +6,24 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
     "dev:server": "cd server && npm run dev",
     "dev:web": "cd web && npm run dev",
-    "build": "cd web && npm run build && cd ../server && npm run build",
+    "build": "node scripts/cleanup-server-processes.js --quiet && cd web && npm run build && cd ../server && npm run build",
+    "smoke:newspaper": "node scripts/smoke-newspaper.js",
+    "smoke:ui": "python scripts/run-ui-smoke.py",
+    "verify:core": "npm run verify:smoke && cd server && node scripts/verify-ai-muse-tools.js && node scripts/verify-agent-autonomy.js",
+    "verify:smoke": "npm run verify:ui && npm run smoke:newspaper",
+    "verify:newspaper": "npm run build && npm run smoke:newspaper",
+    "verify:ui": "npm run build && npm run smoke:ui",
     "start": "cd server && npm start",
-    "install:all": "npm install && cd server && npm install && cd ../web && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../web && npm install",
+    "verify:muse-tools": "cd server && npm run verify:muse-tools",
+    "verify:agent-autonomy": "cd server && npm run verify:agent-autonomy",
+    "openteams:install": "cd integrations/openteams && corepack pnpm install",
+    "openteams:prepare": "cd integrations/openteams && corepack pnpm run generate-types && corepack pnpm run prepare-db",
+    "openteams:dev": "node scripts/openteams-dev.mjs all",
+    "openteams:backend": "node scripts/openteams-dev.mjs backend",
+    "openteams:frontend": "node scripts/openteams-dev.mjs frontend",
+    "openteams:build:frontend": "cd integrations/openteams/frontend && corepack pnpm run build",
+    "openteams:build:desktop": "cd integrations/openteams && corepack pnpm run desktop:build"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

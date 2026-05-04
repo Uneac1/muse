@@ -9,7 +9,7 @@ exports.deleteSnapshot = deleteSnapshot;
 exports.deleteSnapshotsByPrefix = deleteSnapshotsByPrefix;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const snapshotPath = path_1.default.resolve(process.cwd(), 'data', 'integration-snapshots.json');
+const snapshotPath = path_1.default.resolve(__dirname, '../../data/integration-snapshots.json');
 function readStore() {
     try {
         if (!fs_1.default.existsSync(snapshotPath))
@@ -31,7 +31,9 @@ function writeStore(store) {
 }
 function getSnapshot(key, maxAgeMs) {
     const entry = readStore()[key];
-    if (!entry || Date.now() - entry.updatedAt > maxAgeMs)
+    if (!entry)
+        return null;
+    if (typeof maxAgeMs === 'number' && Date.now() - entry.updatedAt > maxAgeMs)
         return null;
     return entry.value;
 }

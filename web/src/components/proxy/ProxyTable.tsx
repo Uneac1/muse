@@ -51,46 +51,48 @@ export default function ProxyTable({ proxies, loading, onEdit, onDelete, onTest,
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="proxy-table-scroll overflow-x-auto">
+      <table className="min-w-[980px] w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-200 dark:border-zinc-700 text-left text-zinc-500 dark:text-zinc-400">
-            <th className="pb-3 font-medium">名称</th>
-            <th className="pb-3 font-medium">类型</th>
-            <th className="pb-3 font-medium">地址</th>
-            <th className="pb-3 font-medium">状态</th>
-            <th className="pb-3 font-medium">上次测试 IP</th>
-            <th className="pb-3 font-medium text-right">操作</th>
+            <th className="px-3 pb-3 font-medium">名称</th>
+            <th className="px-3 pb-3 font-medium">类型</th>
+            <th className="px-3 pb-3 font-medium">地址</th>
+            <th className="px-3 pb-3 font-medium">状态</th>
+            <th className="px-3 pb-3 font-medium">上次测试 IP</th>
+            <th className="px-3 pb-3 font-medium text-right">操作</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {proxies.map(p => (
             <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-              <td className="py-3 text-zinc-900 dark:text-zinc-100">
+              <td className="px-3 py-3 text-zinc-900 dark:text-zinc-100">
                 <span className="inline-flex items-center gap-1.5">
                   {p.name}
                   {p.is_default && <span className="text-amber-500" title="默认代理">⭐</span>}
                   {!p.is_enabled && <span className="text-zinc-400" title="已禁用">⏸</span>}
                 </span>
               </td>
-              <td className="py-3">
+              <td className="px-3 py-3">
                 <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 uppercase font-medium">
                   {p.type}
                 </span>
               </td>
-              <td className="py-3 text-zinc-600 dark:text-zinc-400 font-mono text-xs">{p.host}:{p.port}</td>
-              <td className="py-3"><StatusDot status={p.status} /></td>
-              <td className="py-3 text-zinc-500 dark:text-zinc-400 text-xs font-mono">
+              <td className="px-3 py-3 text-zinc-600 dark:text-zinc-400 font-mono text-xs">{p.host}:{p.port}</td>
+              <td className="px-3 py-3"><StatusDot status={p.status} /></td>
+              <td className="px-3 py-3 text-zinc-500 dark:text-zinc-400 text-xs font-mono">
                 {p.last_test_ip || '-'}
               </td>
-              <td className="py-3">
-                <div className="flex items-center justify-end gap-1">
-                  <button onClick={() => onEdit(p)} className="px-2.5 py-1 text-xs rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+              <td className="px-3 py-3">
+                <div className="flex flex-wrap items-center justify-end gap-1">
+                  <button onClick={() => onEdit(p)} aria-label={`编辑代理 ${p.name}`} className="px-2.5 py-1 text-xs rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                     编辑
                   </button>
                   <ProxyTestButton proxyId={p.id} onTest={onTest} />
                   <button
                     onClick={() => onToggleEnabled(p.id, !p.is_enabled)}
+                    aria-pressed={p.is_enabled}
+                    aria-label={`${p.is_enabled ? '禁用' : '启用'}代理 ${p.name}`}
                     className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
                       p.is_enabled
                         ? 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
@@ -100,11 +102,11 @@ export default function ProxyTable({ proxies, loading, onEdit, onDelete, onTest,
                     {p.is_enabled ? '禁用' : '启用'}
                   </button>
                   {!p.is_default && (
-                    <button onClick={() => onSetDefault(p.id)} className="px-2.5 py-1 text-xs rounded-md text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                    <button onClick={() => onSetDefault(p.id)} aria-label={`设 ${p.name} 为默认代理`} className="px-2.5 py-1 text-xs rounded-md text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
                       设为默认
                     </button>
                   )}
-                  <button onClick={() => onDelete(p.id)} className="px-2.5 py-1 text-xs rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                  <button onClick={() => onDelete(p.id)} aria-label={`删除代理 ${p.name}`} className="px-2.5 py-1 text-xs rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                     删除
                   </button>
                 </div>

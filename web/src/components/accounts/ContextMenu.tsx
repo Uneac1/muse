@@ -74,6 +74,8 @@ export default function ContextMenu({ x, y, account, tags, onClose, onCopyEmail,
   return (
     <div
       ref={menuRef}
+      role="menu"
+      aria-label={`${account.email} 操作菜单`}
       className="fixed z-[80] min-w-[180px] py-1 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 animate-[fadeIn_0.1s_ease-out]"
       style={{ left: x, top: y }}
       onClick={e => e.stopPropagation()}
@@ -86,6 +88,8 @@ export default function ContextMenu({ x, y, account, tags, onClose, onCopyEmail,
         return (
           <button
             key={i}
+            type="button"
+            role="menuitem"
             onClick={(e) => { e.stopPropagation(); mi.onClick(); onClose(); }}
             className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left transition-colors ${
               mi.danger
@@ -107,6 +111,9 @@ export default function ContextMenu({ x, y, account, tags, onClose, onCopyEmail,
           {tags.map(tag => (
             <button
               key={tag.id}
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={accountTagIds.includes(tag.id)}
               onClick={(e) => { e.stopPropagation(); onToggleTag(tag.id); }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
             >

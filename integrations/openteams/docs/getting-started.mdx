@@ -1,0 +1,211 @@
+---
+title: "Getting Started"
+description: "Quick start guide for openteams on macOS, Linux, and Windows"
+sidebarTitle: "Getting Started"
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+## Supported systems
+
+- Windows
+- macOS (Intel and Apple Silicon)
+- Linux
+
+## Prerequisites
+
+Before you start using openteams, make sure you already have access to at least one model provider. You can follow the [model provider configuration guide](/advanced-usage/custom-provider) to add your API keys.
+
+If you already use other coding agents, or plan to use them in openteams, make sure they are installed and authenticated correctly first. openteams currently supports 10 [coding agents](/supported-coding-agents). Here are the installation commands for some commonly used ones:
+
+| Agent | Installation command |
+|-------|-------------|
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `npm install -g @anthropic-ai/claude-code` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` |
+| [Codex](https://github.com/openai/codex) | `npm install -g @openai/codex` |
+| [OpenCode](https://github.com/anomalyco/opencode) | `npm install -g opencode-ai@latest` |
+
+<Tip>
+You can also follow each agent's official documentation if you want more detailed installation instructions.
+</Tip>
+
+## Installation
+
+<Tabs>
+  <Tab title="Windows">
+    **Option 1: Run with npx**
+
+    ```bash
+    npx openteams-web
+    ```
+
+    **Option 2: Desktop installer (recommended)**
+
+    Download the latest installer (`.msi`):
+
+    <a href="https://github.com/openteams-lab/openteams/releases/latest" target="_blank" rel="noopener noreferrer">
+      <img noZoom src="https://img.shields.io/badge/Download-Windows-0078D6?style=for-the-badge&logo=windows" alt="Download for Windows" />
+    </a>
+
+    After installation, launch **openteams** directly.
+  </Tab>
+
+  <Tab title="macOS">
+    **Run with npx**
+
+    ```bash
+    npx openteams-web
+    ```
+  </Tab>
+
+  <Tab title="Linux">
+    **Option 1: Run with npx (recommended)**
+
+    ```bash
+    npx openteams-web
+    ```
+
+    **Option 2: Desktop package**
+
+    Download the latest Linux package from Releases:
+
+    <a href="https://github.com/openteams-lab/openteams/releases/latest" target="_blank" rel="noopener noreferrer">
+      <img noZoom src="https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" />
+    </a>
+
+    Install the `.deb` package with:
+
+    ```bash
+    sudo apt install ./openteams-*.deb
+    ```
+  </Tab>
+</Tabs>
+
+## Quick demo
+
+Here is a short demo showing how to create a session, import a team, and start collaborating in openteams:
+
+<video
+  src="../images/en/quick_demo.mp4"
+   autoPlay
+   loop
+   muted
+   playsInline/>
+
+
+## Quick start
+
+<Steps>
+
+<Step title="Launch openteams">
+  Choose how you want to start openteams:
+
+  **Option 1: Use the desktop app**
+  Open the installed **openteams** app from your system launcher.
+
+  **Option 2: Run with npx**
+  ```bash
+  npx openteams-web
+  ```
+
+  <Note>
+  openteams uses `openteams-cli` as the default base agent. To access models successfully, configure your API credentials in [model provider configuration](/advanced-usage/custom-provider).
+  You can also use other agents. See [supported coding agents](/supported-coding-agents) for details, and make sure each one is installed and authenticated before use.
+  </Note>
+</Step>
+
+<Step title="Create a session">
+  After launch, click `Create Session`, enter a session name, and optionally set a default workspace path.
+  This is not required. You can skip it and keep the default session title and default workspace.
+
+  ![Create a session](../images/en/create_session_zh.png)
+
+  <Note>
+  The default workspace is the shared default working directory for all AI members in that session. You can still set a separate workspace path for each member in team configuration, and those member-level settings take priority over the session default.
+  </Note>
+</Step>
+
+<Step title="Create a team">
+  Click `Create Team Now`, choose a preset team that fits your task, or add preset AI members and custom AI members to build your own team.
+  ![Create a team](../images/en/createteam_zh.png)
+
+  For example, the Full-stack Delivery Team includes roles such as project manager, frontend developer, backend developer, test engineer, and UI designer, so it can collaborate on a complete project delivery.
+  You will need to configure each member's model, workspace path, and skills. You can also keep the default setup and use the team as-is.
+  ![Team member configuration](../images/en/team_members.png)
+</Step>
+
+<Step title="Start collaborating">
+  Your AI team is ready. Start the work by typing into the input box and using `@mentions` to assign tasks to team members.
+  ![Start collaborating](../images/en/start_collabrate.png)
+
+  For example, you can `@mention` the project manager to assign a task, or `@mention` the frontend developer and ask for a login page implementation.
+</Step>
+</Steps>
+
+<Tip>
+You now have the basics of openteams in place.
+
+From here, you can build different kinds of teams for different kinds of work. Continue with the rest of the documentation to explore more features.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Manage Teams" icon="users" href="/advanced-usage/create-team">
+    Organise your AI teams and get more value from collaboration
+  </Card>
+
+  <Card title="Use Skills" icon="brain" href="/advanced-usage/skills">
+    Give your AI members more powerful capabilities
+  </Card>
+</CardGroup>
+

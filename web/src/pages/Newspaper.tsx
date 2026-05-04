@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { DragEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Newspaper, RefreshCw, Search, ExternalLink, ArrowRight, Languages } from 'lucide-react';
+import { Activity, Brain, Newspaper, RefreshCw, Search, ExternalLink, ArrowRight, Languages, GripVertical } from 'lucide-react';
 import { newspaperApi } from '../lib/api';
-import type { NewspaperArticle, NewspaperBriefing, NewspaperSection } from '../types';
+import type { NewspaperArticle, NewspaperBriefing, NewspaperBriefingAiInsight, NewspaperHealth, NewspaperSection } from '../types';
 
 function timeAgo(value: string | null) {
   if (!value) return 'Unknown';
@@ -20,6 +21,7 @@ function buildReadHref(item: NewspaperArticle) {
     url: item.url,
     source: item.source,
     sourceUrl: item.sourceUrl || '',
+    commentUrl: item.commentUrl || '',
     publishedAt: item.publishedAt || '',
     title: item.title,
     titleZh: item.titleZh,
@@ -100,15 +102,19 @@ export default function NewspaperPage() {
   const [briefing, setBriefing] = useState<NewspaperBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [health, setHealth] = useState<NewspaperHealth | null>(null);
+  const [briefingInsight, setBriefingInsight] = useState<NewspaperBriefingAiInsight | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
 
-  const fetchBriefing = async (refresh = false) => {
+  const fetchBriefing = async (refresh = false, silent = false) => {
     try {
       setError(null);
       if (refresh) setRefreshing(true);
-      else setLoading(true);
-      const result = await newspaperApi.briefing({ limit: 12, refresh });
+      else if (!silent) setLoading(true);
+      const result = await newspaperApi.briefing({ limit: 5, refresh });
       setBriefing(result);
     } catch (err: any) {
       setError(err?.message || '报纸加载失败');
@@ -120,20 +126,78 @@ export default function NewspaperPage() {
 
   useEffect(() => {
     fetchBriefing();
+    newspaperApi.health().then(setHealth).catch(() => setHealth(null));
   }, []);
 
-  const visibleSections = useMemo(
-    () => briefing?.sections.filter((section) => matchesQuery(section, query)) ?? [],
-    [briefing, query],
-  );
+  useEffect(() => {
+    if (!briefing) return undefined;
+    const hasPendingCards = briefing.sections.some((section) =>
+      section.items.some((item) => !item.titleZh || !item.summaryZh || item.aiCardStatus === 'pending' || item.aiCardStatus === 'retrying'),
+    );
+    if (!hasPendingCards) return undefined;
+
+    const timer = window.setInterval(() => {
+      void fetchBriefing(false, true);
+    }, 3500);
+    return () => window.clearInterval(timer);
+  }, [briefing]);
+
+  const generateBriefingInsight = async () => {
+    setInsightLoading(true);
+    try {
+      setBriefingInsight(await newspaperApi.briefingInsight({ limit: 5, refresh: false }));
+    } finally {
+      setInsightLoading(false);
+    }
+  };
+
+  const visibleSections = useMemo(() => {
+    const filtered = briefing?.sections.filter((section) => matchesQuery(section, query)) ?? [];
+    if (sectionOrder.length === 0) return filtered;
+    const orderIndex = new Map(sectionOrder.map((id, index) => [id, index]));
+    return [...filtered].sort((a, b) => {
+      const aIndex = orderIndex.get(a.id);
+      const bIndex = orderIndex.get(b.id);
+      if (aIndex === undefined && bIndex === undefined) return 0;
+      if (aIndex === undefined) return 1;
+      if (bIndex === undefined) return -1;
+      return aIndex - bIndex;
+    });
+  }, [briefing, query, sectionOrder]);
 
   const visibleItems = useMemo(
     () => visibleSections.reduce((sum, section) => sum + section.items.length, 0),
     [visibleSections],
   );
 
+  const handleSectionDragStart = (event: DragEvent<HTMLElement>, sectionId: string) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/x-muse-section-id', sectionId);
+  };
+
+  const handleSectionDrop = (event: DragEvent<HTMLElement>, targetSectionId: string) => {
+    event.preventDefault();
+    const draggedSectionId = event.dataTransfer.getData('application/x-muse-section-id');
+    if (!draggedSectionId || draggedSectionId === targetSectionId) return;
+
+    const currentOrder = sectionOrder.length > 0 ? sectionOrder : (briefing?.sections.map((section) => section.id) ?? []);
+    const visibleIds = visibleSections.map((section) => section.id);
+    const orderedVisibleIds = currentOrder.filter((id) => visibleIds.includes(id));
+    const missingVisibleIds = visibleIds.filter((id) => !orderedVisibleIds.includes(id));
+    const nextVisibleOrder = [...orderedVisibleIds, ...missingVisibleIds];
+    const from = nextVisibleOrder.indexOf(draggedSectionId);
+    const to = nextVisibleOrder.indexOf(targetSectionId);
+    if (from < 0 || to < 0) return;
+
+    const nextOrder = [...nextVisibleOrder];
+    const [moved] = nextOrder.splice(from, 1);
+    nextOrder.splice(to, 0, moved);
+    const hiddenIds = currentOrder.filter((id) => !visibleIds.includes(id));
+    setSectionOrder([...nextOrder, ...hiddenIds]);
+  };
+
   return (
-    <div className="newspaper-shell space-y-5 p-4 md:p-6">
+    <div className="newspaper-shell mx-auto w-full max-w-[1520px] space-y-5 p-4 md:p-6">
       <section className="newspaper-panel newspaper-hero overflow-hidden">
         <div className="relative p-6 md:p-7">
           <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_360px]">
@@ -167,19 +231,20 @@ export default function NewspaperPage() {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Mode</div>
                 <div className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Languages className="h-4 w-4" />
-                  双语阅读
+                  AI-only
                 </div>
-                <div className="mt-1 text-[12px] text-muted-foreground">Reader split view</div>
+                <div className="mt-1 text-[12px] text-muted-foreground">渐进正文 / AI 翻译</div>
               </div>
             </div>
           </div>
 
-          <div className="relative mt-5 grid gap-3 xl:grid-cols-[1fr_auto]">
+          <div className="relative mt-5 grid gap-3 xl:grid-cols-[1fr_auto_auto]">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                aria-label="搜索报纸内容"
                 placeholder="搜索领域、标题、翻译、来源、关键词"
                 className="w-full rounded-[22px] border border-border bg-background/82 py-3.5 pl-10 pr-4 text-[15px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
@@ -192,6 +257,53 @@ export default function NewspaperPage() {
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               刷新
             </button>
+            <button
+              onClick={generateBriefingInsight}
+              disabled={insightLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-border bg-background/80 px-5 py-3.5 text-sm font-medium text-foreground transition hover:bg-muted/40 disabled:opacity-50"
+            >
+              {insightLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+              AI 总编台
+            </button>
+          </div>
+
+          <div className="relative mt-4 grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="rounded-[22px] border border-border bg-background/72 p-4 text-sm">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <Activity className="h-4 w-4" />
+                信源健康
+              </div>
+              <div className="mt-2 text-xs leading-6 text-muted-foreground">
+                {health
+                  ? `${health.ok ? '服务在线' : '服务异常'} · AI 账号 ${health.ai.activeAccountCount} · 默认 ${health.ai.defaultAccountName || '未设置'}`
+                  : '健康状态读取中'}
+              </div>
+            </div>
+            <div className="rounded-[22px] border border-border bg-background/72 p-4 text-sm">
+              <div className="font-medium text-foreground">AI 简报分析</div>
+              <div className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">
+                {insightLoading
+                  ? 'AI 正在分析当前报纸。'
+                  : briefingInsight?.summary || '点击 AI 总编台，让全领域 AI 总编挑 10 条重点。'}
+              </div>
+              {briefingInsight && (
+                <div className="mt-3 space-y-3">
+                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                    <span className="rounded-full border border-border px-2 py-1">{briefingInsight.accountName}</span>
+                    <span className="rounded-full border border-border px-2 py-1">{briefingInsight.model}</span>
+                    <span className="rounded-full border border-border px-2 py-1">Top {briefingInsight.highlights.length}</span>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {briefingInsight.highlights.slice(0, 10).map((highlight, index) => (
+                      <div key={`${index}-${highlight}`} className="rounded-2xl border border-border/80 bg-background/70 px-3 py-2 text-xs leading-6 text-foreground/85">
+                        <span className="mr-2 font-semibold text-primary">{index + 1}</span>
+                        {highlight}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -217,13 +329,23 @@ export default function NewspaperPage() {
       ) : (
         <div className="space-y-4">
           {visibleSections.map((section) => (
-            <section key={section.id} className="newspaper-panel overflow-hidden">
+            <section
+              key={section.id}
+              draggable
+              onDragStart={(event) => handleSectionDragStart(event, section.id)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => handleSectionDrop(event, section.id)}
+              className="newspaper-panel cursor-grab overflow-hidden active:cursor-grabbing"
+            >
               <div className="relative p-5 md:p-6">
                 <div className={`absolute inset-x-0 top-0 h-20 bg-gradient-to-r ${section.accent}`} />
                 <div className="relative">
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
                     <div>
                       <div className="flex items-center gap-2">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-dashed border-border bg-background/70 text-muted-foreground" title="拖拽排序领域分区">
+                          <GripVertical className="h-4 w-4" />
+                        </div>
                         <span className="text-2xl">{section.emoji}</span>
                         <div>
                           <div className="text-[24px] font-semibold tracking-tight text-foreground">{section.title}</div>

@@ -15,6 +15,7 @@ class ProxyController {
         if (!body.type || !body.host || !body.port)
             return (0, response_1.fail)(ctx, 'type, host, port are required', 400);
         const proxy = model.create(body);
+        proxyService.invalidateTransportCache();
         (0, response_1.success)(ctx, proxy);
     }
     async update(ctx) {
@@ -22,12 +23,14 @@ class ProxyController {
         const proxy = model.update(id, ctx.request.body);
         if (!proxy)
             return (0, response_1.fail)(ctx, 'Proxy not found', 404);
+        proxyService.invalidateTransportCache(id);
         (0, response_1.success)(ctx, proxy);
     }
     async delete(ctx) {
         const id = parseInt(ctx.params.id);
         if (!model.delete(id))
             return (0, response_1.fail)(ctx, 'Proxy not found', 404);
+        proxyService.invalidateTransportCache(id);
         (0, response_1.success)(ctx, { deleted: true });
     }
     async test(ctx) {
@@ -38,10 +41,12 @@ class ProxyController {
         try {
             const result = await proxyService.testProxy(proxy);
             model.updateTestResult(id, result.ip, result.status);
+            proxyService.invalidateTransportCache(id);
             (0, response_1.success)(ctx, result);
         }
         catch (err) {
             model.updateTestResult(id, '', 'failed');
+            proxyService.invalidateTransportCache(id);
             (0, response_1.fail)(ctx, `Proxy test failed: ${err.message}`);
         }
     }
@@ -50,6 +55,7 @@ class ProxyController {
         const proxy = model.setDefault(id);
         if (!proxy)
             return (0, response_1.fail)(ctx, 'Proxy not found', 404);
+        proxyService.invalidateTransportCache();
         (0, response_1.success)(ctx, proxy);
     }
     async setEnabled(ctx) {
@@ -58,6 +64,7 @@ class ProxyController {
         const proxy = model.setEnabled(id, enabled);
         if (!proxy)
             return (0, response_1.fail)(ctx, 'Proxy not found', 404);
+        proxyService.invalidateTransportCache(id);
         (0, response_1.success)(ctx, proxy);
     }
 }

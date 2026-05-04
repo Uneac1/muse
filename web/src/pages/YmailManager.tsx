@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { BadgePlus, Copy, ExternalLink, Eye, KeyRound, Mail, MailPlus, RefreshCw, Search, ShieldCheck, Trash2, Unplug } from 'lucide-react';
+import { BadgePlus, Copy, ExternalLink, Eye, KeyRound, Mail, MailPlus, RefreshCw, ShieldCheck, Trash2, Unplug } from 'lucide-react';
+import { EmptyState, SearchBox, SectionCard, StatBlock as StatCard } from '../components/ui/patterns';
 import { integrationApi } from '../lib/api';
 import { isIntegrationCacheFresh, readIntegrationCache, shouldShowInitialLoading, writeIntegrationCache } from '../lib/integrationCache';
 import { timeAgo } from '../lib/utils';
@@ -41,49 +42,6 @@ function scheduleIdleTask(task: () => void) {
 
   const id = globalThis.setTimeout(task, 350);
   return () => globalThis.clearTimeout(id);
-}
-
-function SectionCard({ title, sub, action, children }: { title: string; sub?: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          {sub && <p className="text-sm text-muted-foreground">{sub}</p>}
-        </div>
-        {action}
-      </div>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-2xl border border-dashed border-border bg-background/40 px-5 py-12 text-center text-sm text-muted-foreground">{text}</div>;
-}
-
-function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="mt-2 text-2xl font-bold text-foreground">{value}</div>
-      {hint && <div className="mt-2 text-xs text-muted-foreground">{hint}</div>}
-    </div>
-  );
-}
-
-function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
-  return (
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-border bg-background/70 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-      />
-    </div>
-  );
 }
 
 export default function YmailManager() {
@@ -297,6 +255,17 @@ export default function YmailManager() {
     }
   };
 
+  const clearSent = async (id: number) => {
+    if (!confirm('确定清空这个地址的发件箱吗？')) return;
+    try {
+      await integrationApi.clearYmailSent(id);
+      await loadAddresses();
+      toast.success('发件箱已清空');
+    } catch (err: any) {
+      toast.error(err.message || '清空发件箱失败');
+    }
+  };
+
   const resetPassword = async (id: number) => {
     if (!newPassword.trim()) return toast.error('请先输入新密码');
     try {
@@ -392,7 +361,7 @@ export default function YmailManager() {
           <div className="rounded-2xl border border-border bg-background/60 p-4">
             <div className="text-sm font-medium text-foreground">Ymail 管理后台密码</div>
             <div className="mt-3 flex flex-col gap-3 md:flex-row">
-              <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder={data.connected ? `当前已连接：${data.tokenMasked}` : '输入 ymail admin 密码'} className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder={data.connected ? `当前已连接：${data.tokenMasked}` : '输入 ymail admin 密码'} aria-label="Ymail 管理后台密码" className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
               <button onClick={connect} disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
                 <ShieldCheck className="h-4 w-4" />
                 连接并校验
@@ -437,8 +406,8 @@ export default function YmailManager() {
 
       <SectionCard title="自动创建临时邮箱" sub="创建动作直接走 ymail /admin/new_address。创建成功后会返回登录 JWT，并自动刷新远端地址列表。">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_auto]">
-          <input value={createForm.name} onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))} placeholder={data.openSettings?.disableCustomAddressName ? '该站点禁用了自定义名称' : '输入邮箱名前缀，如 promo2026'} disabled={!!data.openSettings?.disableCustomAddressName} className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60" />
-          <select value={createForm.domain} onChange={(e) => setCreateForm((prev) => ({ ...prev, domain: e.target.value }))} className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20">
+          <input value={createForm.name} onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))} placeholder={data.openSettings?.disableCustomAddressName ? '该站点禁用了自定义名称' : '输入邮箱名前缀，如 promo2026'} disabled={!!data.openSettings?.disableCustomAddressName} aria-label="邮箱名前缀" className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60" />
+          <select value={createForm.domain} onChange={(e) => setCreateForm((prev) => ({ ...prev, domain: e.target.value }))} aria-label="选择域名" className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20">
             <option value="">选择域名</option>
             {domainOptions.map((domain) => <option key={domain} value={domain}>{domain}</option>)}
           </select>
@@ -499,7 +468,20 @@ export default function YmailManager() {
                 {visibleAddresses.map((item) => {
                   const active = selectedAddress?.id === item.id;
                   return (
-                    <button key={item.id} onClick={() => setSelectedAddress(item)} className={`w-full rounded-2xl border p-4 text-left transition ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background/60 hover:border-primary/40 hover:bg-secondary/40'}`}>
+                    <div
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={active}
+                      onClick={() => setSelectedAddress(item)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedAddress(item);
+                        }
+                      }}
+                      className={`w-full cursor-pointer rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background/60 hover:border-primary/40 hover:bg-secondary/40'}`}
+                    >
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                           <div className="text-base font-semibold text-foreground">{item.name}</div>
@@ -511,12 +493,13 @@ export default function YmailManager() {
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); revealCredential(item.id); }} className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary"><Eye className="h-3.5 w-3.5" />凭证</button>
-                          <button onClick={(e) => { e.stopPropagation(); clearInbox(item.id); }} className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary"><Mail className="h-3.5 w-3.5" />清空收件箱</button>
-                          <button onClick={(e) => { e.stopPropagation(); recycleAddress(item.id); }} className="inline-flex items-center gap-1 rounded-md border border-red-500/30 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-500/10"><Trash2 className="h-3.5 w-3.5" />回收</button>
+                          <button onClick={(e) => { e.stopPropagation(); revealCredential(item.id); }} aria-label={`读取 ${item.name} 凭证`} className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary"><Eye className="h-3.5 w-3.5" />凭证</button>
+                          <button onClick={(e) => { e.stopPropagation(); clearInbox(item.id); }} aria-label={`清空 ${item.name} 收件箱`} className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary"><Mail className="h-3.5 w-3.5" />清空收件箱</button>
+                          <button onClick={(e) => { e.stopPropagation(); clearSent(item.id); }} aria-label={`清空 ${item.name} 发件箱`} className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary"><Mail className="h-3.5 w-3.5" />清空发件箱</button>
+                          <button onClick={(e) => { e.stopPropagation(); recycleAddress(item.id); }} aria-label={`回收 ${item.name}`} className="inline-flex items-center gap-1 rounded-md border border-red-500/30 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-500/10"><Trash2 className="h-3.5 w-3.5" />回收</button>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -538,24 +521,26 @@ export default function YmailManager() {
               <div className="rounded-2xl border border-border bg-background/60 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-medium text-foreground">邮箱凭证</div>
-                  <button onClick={() => revealCredential(selectedAddress.id)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><Eye className="h-4 w-4" />读取</button>
+                  <button onClick={() => revealCredential(selectedAddress.id)} aria-label={`读取 ${selectedAddress.name} 凭证`} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><Eye className="h-4 w-4" />读取</button>
                 </div>
                 {credential ? (
                   <div className="mt-3 space-y-3 text-sm">
                     <div className="rounded-xl border border-border bg-background/60 p-3"><div className="text-muted-foreground">地址</div><div className="mt-1 break-all font-medium text-foreground">{credential.address || '等待读取'}</div></div>
                     <div className="rounded-xl border border-border bg-background/60 p-3"><div className="text-muted-foreground">JWT</div><div className="mt-1 break-all font-medium text-foreground">{credential.jwt}</div></div>
-                    {credential.loginUrl && <div className="flex flex-wrap gap-2">
-                      <button onClick={() => navigator.clipboard.writeText(credential.jwt)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><Copy className="h-4 w-4" />复制 JWT</button>
-                      <button onClick={() => window.open(credential.loginUrl, '_blank', 'noopener,noreferrer')} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><ExternalLink className="h-4 w-4" />打开邮箱</button>
-                    </div>}
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => navigator.clipboard.writeText(credential.jwt)} disabled={!credential.jwt} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"><Copy className="h-4 w-4" />复制 JWT</button>
+                      {credential.address && <button onClick={() => navigator.clipboard.writeText(credential.address || '')} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><Copy className="h-4 w-4" />复制地址</button>}
+                      {credential.password && <button onClick={() => navigator.clipboard.writeText(credential.password || '')} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><Copy className="h-4 w-4" />复制密码</button>}
+                      {credential.loginUrl && <button onClick={() => window.open(credential.loginUrl, '_blank', 'noopener,noreferrer')} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"><ExternalLink className="h-4 w-4" />打开邮箱</button>}
+                    </div>
                   </div>
                 ) : <EmptyState text="点击上方“读取”即可获取该地址的 JWT 凭证。" />}
               </div>
               <div className="rounded-2xl border border-border bg-background/60 p-4">
                 <div className="text-sm font-medium text-foreground">重置远端密码</div>
                 <div className="mt-3 flex gap-2">
-                  <input type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="输入新的地址密码" className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
-                  <button onClick={() => resetPassword(selectedAddress.id)} className="inline-flex items-center gap-2 rounded-md bg-amber-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-600"><KeyRound className="h-4 w-4" />重置</button>
+                  <input type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="输入新的地址密码" aria-label="新的地址密码" className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                  <button onClick={() => resetPassword(selectedAddress.id)} disabled={!newPassword.trim()} className="inline-flex items-center gap-2 rounded-md bg-amber-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50"><KeyRound className="h-4 w-4" />重置</button>
                 </div>
               </div>
             </div>
@@ -564,22 +549,35 @@ export default function YmailManager() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <SectionCard title="最近邮件" sub={selectedAddress ? `${selectedAddress.name} · 自动刷新 ${autoRefresh ? '开启' : '关闭'}` : '先选择地址再看邮件'} action={<label className="inline-flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />自动刷新</label>}>
+        <SectionCard title="最近邮件" sub={selectedAddress ? `${selectedAddress.name} · 自动刷新 ${autoRefresh ? '开启' : '关闭'}` : '先选择地址再看邮件'} action={<label className="inline-flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} aria-label="自动刷新邮件" />自动刷新</label>}>
           {!selectedAddress ? <EmptyState text="先选择地址。" /> : mailLoading ? <EmptyState text="正在读取远端邮件..." /> : mails.length === 0 ? <EmptyState text="当前没有邮件。" /> : (
             <div className="space-y-3">
               {mails.map((item) => {
                 const active = selectedMail?.id === item.id;
                 return (
-                  <button key={item.id} onClick={() => setSelectedMail(item)} className={`w-full rounded-2xl border p-4 text-left transition ${active ? 'border-primary bg-primary/5' : 'border-border bg-background/60 hover:border-primary/40 hover:bg-secondary/40'}`}>
+                  <div
+                    key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedMail(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedMail(item);
+                      }
+                    }}
+                    aria-pressed={active}
+                    className={`w-full cursor-pointer rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${active ? 'border-primary bg-primary/5' : 'border-border bg-background/60 hover:border-primary/40 hover:bg-secondary/40'}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate font-semibold text-foreground">{item.subject || '(无主题)'}</div>
                         <div className="mt-1 text-xs text-muted-foreground">{item.from || item.to || '未知发件人'}</div>
                         <div className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.text || item.html || JSON.stringify(item.raw || {})}</div>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); removeMail(item.id); }} className="shrink-0 rounded-md border border-red-500/30 p-2 text-red-600 hover:bg-red-500/10"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); removeMail(item.id); }} aria-label={`删除邮件 ${item.subject || item.id}`} className="shrink-0 rounded-md border border-red-500/30 p-2 text-red-600 hover:bg-red-500/10"><Trash2 className="h-4 w-4" /></button>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -598,7 +596,17 @@ export default function YmailManager() {
                 </div>
               </div>
               {selectedMail.text && <div className="rounded-2xl border border-border bg-background/60 p-4"><div className="mb-2 text-sm font-medium text-foreground">文本内容</div><pre className="whitespace-pre-wrap break-words text-sm text-foreground">{selectedMail.text}</pre></div>}
-              {selectedMail.html && <div className="rounded-2xl border border-border bg-background/60 p-4"><div className="mb-2 text-sm font-medium text-foreground">HTML 内容</div><div className="max-h-[320px] overflow-auto rounded-xl border border-border bg-background/70 p-3 text-sm" dangerouslySetInnerHTML={{ __html: selectedMail.html }} /></div>}
+              {selectedMail.html && (
+                <div className="rounded-2xl border border-border bg-background/60 p-4">
+                  <div className="mb-2 text-sm font-medium text-foreground">HTML 内容</div>
+                  <iframe
+                    title="邮件 HTML 内容"
+                    sandbox=""
+                    srcDoc={selectedMail.html}
+                    className="h-[320px] w-full rounded-xl border border-border bg-background/70"
+                  />
+                </div>
+              )}
               <div className="rounded-2xl border border-border bg-background/60 p-4">
                 <div className="mb-2 text-sm font-medium text-foreground">原始 JSON</div>
                 <pre className="max-h-[420px] overflow-auto rounded-xl bg-zinc-950 p-4 text-xs text-zinc-100">{JSON.stringify(selectedMail, null, 2)}</pre>

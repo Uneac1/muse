@@ -8,6 +8,8 @@ const crypto_1 = __importDefault(require("crypto"));
 const undici_1 = require("undici");
 const config_1 = require("../config");
 const snapshotCache_1 = require("../utils/snapshotCache");
+const YMAIL_ADDRESS_PAGE_SIZE_MAX = 100;
+const YMAIL_MAIL_PAGE_SIZE_MAX = 50;
 class YmailService {
     cache = new Map();
     inflight = new Map();
@@ -54,7 +56,7 @@ class YmailService {
             const cached = this.getCached(key);
             if (cached)
                 return cached;
-            const snapshot = (0, snapshotCache_1.getSnapshot)(key, ttlMs);
+            const snapshot = (0, snapshotCache_1.getSnapshot)(key);
             if (snapshot)
                 return this.setCached(key, snapshot, ttlMs);
             const inflight = this.inflight.get(key);
@@ -152,9 +154,11 @@ class YmailService {
         return this.request('/admin/statistics', { adminPassword });
     }
     async listAddresses(adminPassword, params = {}) {
+        const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 50) || 50, YMAIL_ADDRESS_PAGE_SIZE_MAX));
+        const offset = Math.max(0, Math.trunc(params.offset ?? 0) || 0);
         const search = new URLSearchParams();
-        search.set('limit', String(params.limit ?? 50));
-        search.set('offset', String(params.offset ?? 0));
+        search.set('limit', String(limit));
+        search.set('offset', String(offset));
         if (params.query)
             search.set('query', params.query);
         if (params.sortBy)
@@ -210,9 +214,11 @@ class YmailService {
         return this.request('/api/settings', { jwt });
     }
     async fetchAddressMails(jwt, params = {}) {
+        const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 20) || 20, YMAIL_MAIL_PAGE_SIZE_MAX));
+        const offset = Math.max(0, Math.trunc(params.offset ?? 0) || 0);
         const search = new URLSearchParams();
-        search.set('limit', String(params.limit ?? 20));
-        search.set('offset', String(params.offset ?? 0));
+        search.set('limit', String(limit));
+        search.set('offset', String(offset));
         const result = await this.request(`/api/mails?${search.toString()}`, { jwt });
         return {
             results: Array.isArray(result?.results) ? result.results : [],
@@ -223,8 +229,8 @@ class YmailService {
         await this.request(`/api/mails/${mailId}`, { method: 'DELETE', jwt });
     }
     async fetchAddressMailbox(record, id, params = {}, options) {
-        const limit = params.limit ?? 20;
-        const offset = params.offset ?? 0;
+        const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 20) || 20, YMAIL_MAIL_PAGE_SIZE_MAX));
+        const offset = Math.max(0, Math.trunc(params.offset ?? 0) || 0);
         return this.withCache(this.cacheKey('ymail-mails', record.token, `${id}:${limit}:${offset}`), 20 * 1000, !!options?.force, async () => {
             const credential = await this.showAddressCredential(record.token, id);
             const [mailbox, mails] = await Promise.all([

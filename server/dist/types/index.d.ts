@@ -1,10 +1,12 @@
 export type AccountProvider = 'microsoft' | 'gmail' | 'qq' | 'custom';
-export type IntegrationProvider = 'github' | 'cloudflare' | 'notion' | 'misub' | 'ymail';
+export type IntegrationProvider = 'github' | 'cloudflare' | 'notion' | 'misub' | 'ymail' | 'linuxdo';
 export type MailboxType = 'INBOX' | 'Junk' | 'Sent';
-export type AiProvider = 'chatgpt' | 'codex' | 'claude' | 'claude_code' | 'anthropic_compatible' | 'gemini' | 'deepseek' | 'openai_compatible';
+export type AiProvider = 'chatgpt' | 'codex' | 'claude' | 'claude_code' | 'anthropic_compatible' | 'gemini' | 'deepseek' | 'mimo' | 'openai_compatible';
 export type TokenProvider = 'openai_codex' | 'claude' | 'claude_code';
 export type TokenSessionFormat = 'cookie_header' | 'cookie_json' | 'netscape';
 export type TokenAuthMethod = 'session' | 'oauth' | 'manual' | 'api';
+export type ProxyKernelHealth = 'healthy' | 'recovering' | 'degraded' | 'failed';
+export type TokenSyncFailureKind = 'none' | 'reauth_required' | 'proxy_recoverable' | 'network_transient' | 'provider_blocked' | 'unknown';
 export interface Account {
     id: number;
     provider: AccountProvider;
@@ -26,6 +28,7 @@ export interface Account {
     token_refreshed_at: string | null;
     created_at: string;
     updated_at: string;
+    tags?: Tag[];
 }
 export interface MailMessage {
     id: number;
@@ -43,6 +46,8 @@ export interface MailMessage {
     cached_at: string;
     account_email?: string;
     attachments?: MailAttachment[];
+    source?: 'mail' | 'temporary';
+    mailboxType?: 'mail' | 'temporary';
 }
 export interface MailAttachment {
     filename: string;
@@ -65,10 +70,18 @@ export interface Proxy {
     status: 'untested' | 'active' | 'failed';
     created_at: string;
 }
+export interface ApiErrorPayload {
+    code: string;
+    message: string;
+    details?: unknown;
+}
 export interface ApiResponse<T> {
     code: number;
     data: T;
-    message?: string;
+    message: string;
+    ok: boolean;
+    error?: ApiErrorPayload | null;
+    meta?: Record<string, any>;
 }
 export interface PaginatedResponse<T> {
     list: T[];
@@ -84,6 +97,19 @@ export interface ImportRequest {
 export interface ImportResult {
     imported: number;
     skipped: number;
+    errors: string[];
+}
+export interface ImportPreviewResult {
+    newItems: {
+        line: number;
+        email: string;
+        [key: string]: any;
+    }[];
+    duplicates: {
+        line: number;
+        email: string;
+        [key: string]: any;
+    }[];
     errors: string[];
 }
 export interface ExportRequest {
@@ -134,8 +160,13 @@ export interface NewspaperArticle {
     url: string;
     summary: string;
     summaryZh: string;
+    aiCardStatus?: 'ready' | 'pending' | 'failed' | 'retrying';
+    aiCardError?: string;
+    readerStateKey?: string;
+    detailStatus?: 'partial' | 'ready' | 'recovering' | 'failed';
     source: string;
     sourceUrl?: string;
+    commentUrl?: string;
     domain: string;
     publishedAt: string | null;
     score: number;
@@ -151,9 +182,12 @@ export interface NewspaperTopic {
 export interface NewspaperSourceStatus {
     name: string;
     url: string;
-    status: 'ok' | 'failed';
+    status: 'ok' | 'stale' | 'failed' | 'recovering';
     itemCount: number;
     error?: string;
+    lastSuccessAt?: string | null;
+    lastFailureAt?: string | null;
+    nextRetryAt?: string | null;
 }
 export interface NewspaperSection {
     id: string;
@@ -184,15 +218,102 @@ export interface NewspaperArticleDetail {
     source: string;
     domain: string;
     sourceUrl?: string;
+    commentUrl?: string;
     publishedAt: string | null;
     title: string;
     titleZh: string;
     summary: string;
     summaryZh: string;
+    coverImage?: string;
+    images: NewspaperImage[];
     originalContent: string;
     translatedContent: string;
+    replies: NewspaperReply[];
+    replyCount: number;
     extractedAt: string;
     translationMode: 'live' | 'fallback';
+    fulltextStatus: 'pending' | 'partial' | 'ready' | 'failed' | 'recovering';
+    imageStatus: 'pending' | 'partial' | 'ready' | 'failed' | 'recovering';
+    replyStatus: 'pending' | 'partial' | 'ready' | 'failed' | 'recovering';
+    translationStatus: 'pending' | 'partial' | 'ready' | 'failed' | 'recovering';
+    statusMessage?: string;
+    nextRetryAt?: string | null;
+}
+export interface NewspaperImage {
+    url: string;
+    alt: string;
+    width?: number;
+    height?: number;
+    source: 'cover' | 'content';
+}
+export interface NewspaperReply {
+    id: string;
+    author: string;
+    authorHandle?: string;
+    avatarUrl?: string;
+    publishedAt: string | null;
+    content: string;
+    contentZh: string;
+    likeCount?: number;
+    replyCount?: number;
+    url?: string;
+}
+export interface NewspaperAiInsight {
+    accountId: number;
+    accountName: string;
+    model: string;
+    status: 'ready' | 'degraded';
+    degradedReason?: string | null;
+    summary: string;
+    takeaways: string[];
+    risks: string[];
+    questions: string[];
+    actions: string[];
+    generatedAt: string;
+}
+export interface NewspaperSectionAiInsight {
+    sectionId: string;
+    title: string;
+    summary: string;
+    topSignals: string[];
+}
+export interface NewspaperBriefingAiInsight {
+    accountId: number;
+    accountName: string;
+    model: string;
+    headline: string;
+    summary: string;
+    highlights: string[];
+    watchlist: string[];
+    opportunities: string[];
+    sections: NewspaperSectionAiInsight[];
+    coverage?: {
+        totalSections: number;
+        coveredSections: number;
+        totalHighlights: number;
+        totalSources: number;
+    };
+    generatedAt: string;
+}
+export interface NewspaperHealth {
+    ok: boolean;
+    featureVersion: string;
+    generatedAt: string;
+    capabilities: {
+        briefing: boolean;
+        articleReader: boolean;
+        articleInsight: boolean;
+        briefingInsight: boolean;
+        images: boolean;
+        replies: boolean;
+        aiAccountPool: boolean;
+    };
+    ai: {
+        activeAccountCount: number;
+        defaultAccountId: number | null;
+        defaultAccountName: string;
+        defaultModel: string;
+    };
 }
 export interface ProxyTestResult {
     ip: string;
@@ -204,6 +325,12 @@ export interface ProxyKernelSource {
     label: string;
     url: string;
     kind: 'profile' | 'subscription';
+}
+export interface ProxyKernelGroup {
+    name: string;
+    type: string;
+    now: string;
+    all: string[];
 }
 export interface ProxyKernelStatus {
     installed: boolean;
@@ -219,8 +346,54 @@ export interface ProxyKernelStatus {
     socksPort: number;
     httpPort: number;
     previousDefaultProxyId: number | null;
+    openAiGroupName: string;
+    openAiNodeName: string;
     updatedAt: string | null;
+    health: ProxyKernelHealth;
+    lastSuccessfulNode: string;
+    lastSuccessfulAt: string | null;
+    recoveryState: string;
+    lastRecoveryError: string;
     availableSources: ProxyKernelSource[];
+    proxyGroups: ProxyKernelGroup[];
+}
+export interface CrsRelayStatus {
+    enabled: boolean;
+    name: string;
+    upstreamBaseUrl: string;
+    upstreamApiKeyMasked: string;
+    publicApiKeyMasked: string;
+    defaultModel: string;
+    timeoutMs: number;
+    enabledSources: Array<'oauth' | 'token_api' | 'ai_api' | 'manual'>;
+    updatedAt: string | null;
+    lastTestAt: string | null;
+    lastTestStatus: 'success' | 'failed' | 'never';
+    lastError: string;
+    relayBaseUrl: string;
+    codexConfig: {
+        path: string;
+        mode: 'crs' | 'normal' | 'missing';
+        backupPath: string;
+        lastSyncedAt: string | null;
+    };
+    candidateCount: number;
+    candidates: Array<{
+        source: 'ai' | 'token' | 'manual';
+        sourceType: 'oauth' | 'token_api' | 'ai_api' | 'manual';
+        id: number | string;
+        name: string;
+        model: string;
+        baseUrl: string;
+        status: string;
+    }>;
+}
+export interface CrsRelayTestResult {
+    ok: boolean;
+    status: number;
+    latencyMs: number;
+    endpoint: string;
+    preview: string;
 }
 export interface FetchMailsResult {
     mails: MailMessage[];
@@ -241,6 +414,27 @@ export interface SendMailRequest {
 export interface GoogleOAuthAuthorizeResult {
     url: string;
     state: string;
+}
+export interface OpenAILaunchAuthorizeResult {
+    state: string;
+    launchMode: 'proxy-browser' | 'system-browser';
+}
+export interface OpenAIOAuthResult {
+    status: 'pending' | 'completed' | 'expired';
+    type?: 'openai-oauth-success' | 'openai-oauth-error';
+    provider?: string;
+    email?: string;
+    external_account_id?: string;
+    access_token?: string;
+    refresh_token?: string;
+    id_token?: string;
+    error?: string;
+}
+export interface OAuthProviderStatus {
+    googleConfigured: boolean;
+    googleProjectId: string;
+    openaiConfigured: boolean;
+    linuxDoConfigured?: boolean;
 }
 export interface AuthCheckResult {
     required: boolean;
@@ -263,6 +457,25 @@ export interface IntegrationTokenRecord {
     provider: IntegrationProvider;
     token: string;
     updated_at: string;
+}
+export interface LinuxDoUser {
+    id: number;
+    username: string;
+    name: string;
+    active: boolean;
+    trust_level: number;
+    email?: string;
+    avatar_url?: string;
+    silenced?: boolean;
+}
+export interface LinuxDoIntegrationData {
+    connected: boolean;
+    clientConfigured: boolean;
+    tokenMasked: string;
+    lastSyncAt: string | null;
+    expiresAt: string | null;
+    scopes: string[];
+    user: LinuxDoUser | null;
 }
 export interface YmailOpenSettings {
     title: string;
@@ -330,6 +543,12 @@ export interface YmailMailSummary {
     raw?: Record<string, any>;
     [key: string]: any;
 }
+export interface YmailMailListResult {
+    jwt: string;
+    address: string;
+    results: YmailMailSummary[];
+    count: number;
+}
 export interface YmailIntegrationData {
     connected: boolean;
     tokenMasked: string;
@@ -388,10 +607,69 @@ export interface AiMessage {
     content: string;
     created_at: string;
 }
+export interface AiRuntimeContext {
+    path?: string;
+    section?: string;
+    routeContext?: Record<string, string>;
+    globalMonitor?: boolean;
+    autoExecute?: boolean;
+}
 export interface AiChatResult {
     thread: AiThread;
     userMessage: AiMessage;
     assistantMessage: AiMessage;
+    chatSession?: {
+        threadId: number;
+        accountId: number;
+        accountName: string;
+        provider: AiProvider;
+        model: string;
+    };
+    agentRuntime?: {
+        mode: string;
+        observationLoop: string;
+        currentFocusPath: string | null;
+        runtimeEventRefs: string[];
+    };
+    uiActions?: Array<{
+        type: 'open_path';
+        path: string;
+        label?: string;
+    }>;
+    toolExecutions?: number;
+    toolDetails?: Array<{
+        tool: string;
+        ok: boolean;
+        error?: string;
+        target?: string;
+    }>;
+    degradedReason?: string;
+    runtimeEventRefs?: string[];
+    museActions?: Array<{
+        type: 'open_path';
+        path: string;
+        label?: string;
+    }>;
+    museToolExecutions?: number;
+    museToolDetails?: Array<{
+        tool: string;
+        ok: boolean;
+        error?: string;
+        target?: string;
+    }>;
+    responseMeta?: {
+        provider: AiProvider;
+        protocol: 'gemini' | 'anthropic' | 'responses' | 'openai';
+        model: string;
+        accountId: number;
+        accountName: string;
+    };
+    fallbackAccount?: {
+        id: number;
+        name: string;
+        provider: AiProvider;
+        model: string;
+    };
 }
 export interface AiAccountDiagnostics {
     account: AiAccount;
@@ -472,6 +750,9 @@ export interface TokenAccount {
     auto_sync_enabled: number;
     last_synced_at: string | null;
     last_error: string;
+    next_retry_at: string | null;
+    failure_count: number;
+    last_failure_kind: TokenSyncFailureKind;
     snapshot_json: string;
     created_at: string;
     updated_at: string;
@@ -479,6 +760,113 @@ export interface TokenAccount {
 export interface TokenAccountView extends Omit<TokenAccount, 'snapshot_json'> {
     snapshot: TokenAnalyticsSnapshot | null;
     provider_label: string;
+}
+export interface CodexFreeImportResult {
+    directory: string;
+    scanned: number;
+    imported: number;
+    updated: number;
+    skipped: number;
+    errors: string[];
+    accounts: TokenAccountView[];
+}
+export interface CodexDesktopSettings {
+    id: number;
+    codex_home: string;
+    auto_switch_enabled: number;
+    auto_switch_launch_mode: 'activate_only' | 'activate_and_open';
+    low_5h_threshold_pct: number;
+    updated_at: string;
+}
+export interface CodexActivationEvent {
+    id: number;
+    token_account_id: number | null;
+    strategy: 'manual' | 'next' | 'best' | 'auto' | 'restore';
+    status: 'success' | 'error' | 'restored';
+    codex_home: string;
+    backup_auth_path: string;
+    error: string;
+    created_at: string;
+}
+export interface CodexDesktopStatus {
+    codexHome: string;
+    authPath: string;
+    sessionsPath: string;
+    archivedSessionsPath: string;
+    authExists: boolean;
+    sessionsExists: boolean;
+    archivedSessionsExists: boolean;
+    authMode: string;
+    currentAccountId: string;
+    currentEmail: string;
+    matchedTokenAccountId: number | null;
+    matchedTokenAccountName: string;
+    matchSource: 'marker_token' | 'marker_identity' | 'token_hash' | 'identity_pair' | 'external_account_id' | 'email' | 'none';
+    matchConfidence: 'exact' | 'high' | 'medium' | 'low' | 'none';
+    matchAmbiguous: boolean;
+    matchNotes: string[];
+    lastActivation: CodexActivationEvent | null;
+    autoSwitchPolicy: CodexAutoSwitchPolicyStatus;
+}
+export interface CodexAutoSwitchPolicyStatus {
+    enabled: boolean;
+    low5hThresholdPct: number;
+    failureCooldownMinutes: number;
+    maxAttempts: number;
+    protectedRunning: boolean;
+    recentFailedCandidateIds: number[];
+    userInterventionReason: 'none' | 'identity_ambiguous' | 'low_confidence_match' | 'no_trusted_current_account';
+}
+export interface CodexDesktopState {
+    status: CodexDesktopStatus;
+    settings: CodexDesktopSettings;
+    accounts: TokenAccountView[];
+}
+export interface CodexDesktopActivationResult {
+    status: CodexDesktopStatus;
+    event: CodexActivationEvent;
+    account: TokenAccountView | null;
+    launched: boolean;
+}
+export interface CodexDesktopAutoSwitchDeferred {
+    deferred: true;
+    reason: 'protected_running_session';
+    queuedAt: string;
+    currentTokenAccountId: number;
+    candidateTokenAccountId: number;
+    nextCheck: 'next_auto_sync';
+}
+export interface CodexUsageHistoryPoint {
+    date: string;
+    sessionCount: number;
+    fileCount: number;
+    byteCount: number;
+    inputTokens: number;
+    outputTokens: number;
+    cachedInputTokens: number;
+    reasoningOutputTokens: number;
+    totalTokens: number;
+    estimated: boolean;
+}
+export interface CodexTokenSnapshotPoint {
+    id: number;
+    token_account_id: number;
+    account_name: string;
+    created_at: string;
+    fiveHourRemainingPct: number | null;
+    weeklyRemainingPct: number | null;
+}
+export interface CodexWeeklyTrendPoint {
+    date: string;
+    totalWeeklyRemainingPct: number;
+    dailyUsedPct: number;
+    accountCount: number;
+    zeroWeeklyAccountCount: number;
+}
+export interface CodexUsageHistory {
+    tokenSnapshots: CodexTokenSnapshotPoint[];
+    localUsage: CodexUsageHistoryPoint[];
+    weeklyTrend: CodexWeeklyTrendPoint[];
 }
 export interface GitHubProfile {
     id: number;
@@ -812,6 +1200,7 @@ export interface NotionIntegrationData {
     lastSyncAt: string | null;
     bot: NotionBot | null;
     users: NotionUser[];
+    blocks?: NotionBlockSummary[];
     pages: NotionPageSummary[];
     databases: NotionDatabaseSummary[];
     metrics: {
@@ -858,6 +1247,8 @@ export interface MiSubUserInfo {
     download: number;
     total: number;
     expire: number;
+    username?: string;
+    plan?: string;
 }
 export interface MiSubSubscription {
     id: string;
@@ -914,6 +1305,57 @@ export interface MiSubIntegrationData {
     profiles: MiSubProfile[];
     settings: MiSubSettings | null;
 }
+export type MiSubAiActionType = 'subscription_patch' | 'profile_patch' | 'profile_create' | 'profile_delete';
+export interface MiSubAiAction {
+    type: MiSubAiActionType;
+    id?: string;
+    reason: string;
+    patch?: Record<string, any>;
+    profile?: Partial<MiSubProfile>;
+}
+export interface MiSubAiAnalysis {
+    account: {
+        id: number;
+        name: string;
+        provider: string;
+        model: string;
+    };
+    goal: string;
+    summary: string;
+    findings: string[];
+    actions: MiSubAiAction[];
+    raw: string;
+    sourceMode?: 'ai' | 'heuristic';
+    fallbackReason?: string;
+}
+export interface MiSubAiInspectionConfig {
+    enabled: boolean;
+    accountId: number | null;
+    intervalHours: number;
+    goal: string;
+    lastRunAt: string | null;
+    nextRunAt: string | null;
+    updatedAt: string | null;
+}
+export interface MiSubAiInspectionRun {
+    id: number;
+    status: 'success' | 'failed' | 'skipped';
+    accountId: number | null;
+    goal: string;
+    summary: string;
+    findings: string[];
+    actions: MiSubAiAction[];
+    raw: string;
+    error: string;
+    startedAt: string;
+    finishedAt: string | null;
+}
+export interface MiSubAiInspectionState {
+    config: MiSubAiInspectionConfig;
+    latestRun: MiSubAiInspectionRun | null;
+    history: MiSubAiInspectionRun[];
+    running: boolean;
+}
 export type PersonalRuleTriggerType = 'token_low_remaining_pct' | 'account_error' | 'proxy_failed' | 'keyword_in_news' | 'github_repo_activity' | 'subscription_expiring_days';
 export interface PersonalOsRule {
     id: number;
@@ -929,6 +1371,57 @@ export interface PersonalOsRule {
 }
 export interface PersonalOsRuleView extends Omit<PersonalOsRule, 'config_json'> {
     config: Record<string, any>;
+}
+export interface PersonalRuleAiSuggestion {
+    type: 'create' | 'update' | 'delete';
+    target_id?: number;
+    name: string;
+    description: string;
+    scope: 'today' | 'inbox' | 'alert';
+    trigger_type: PersonalRuleTriggerType;
+    config: Record<string, any>;
+    is_enabled: number;
+    reason: string;
+}
+export interface PersonalRuleAiPlan {
+    requestedAccountId?: number | null;
+    requestedAccountName?: string;
+    accountId: number;
+    accountName: string;
+    model: string;
+    usedFallback?: boolean;
+    fallbackReason?: string;
+    generatedAt: string;
+    summary: string;
+    suggestions: PersonalRuleAiSuggestion[];
+}
+export interface PersonalRuleAutomationConfig {
+    enabled: boolean;
+    accountId: number | null;
+    intervalHours: number;
+    focus: string;
+    autoApplyEnabled: boolean;
+    lastRunAt: string | null;
+    nextRunAt: string | null;
+    updatedAt: string | null;
+}
+export interface PersonalRuleAutomationRun {
+    id: number;
+    status: 'success' | 'failed' | 'skipped';
+    accountId: number | null;
+    focus: string;
+    summary: string;
+    suggestions: PersonalRuleAiSuggestion[];
+    appliedCount: number;
+    error: string;
+    startedAt: string;
+    finishedAt: string | null;
+}
+export interface PersonalRuleAutomationState {
+    config: PersonalRuleAutomationConfig;
+    latestRun: PersonalRuleAutomationRun | null;
+    history: PersonalRuleAutomationRun[];
+    running: boolean;
 }
 export interface PersonalMemory {
     id: number;
@@ -947,6 +1440,320 @@ export interface PersonalMemory {
 }
 export interface PersonalMemoryView extends Omit<PersonalMemory, 'tags_json'> {
     tags: string[];
+}
+export interface PersonalMemoryAiSuggestion {
+    type: 'create' | 'update' | 'resolve';
+    target_id?: number;
+    title: string;
+    content: string;
+    kind: PersonalMemory['kind'];
+    tags: string[];
+    is_pinned?: number;
+    is_resolved?: number;
+    entity_type: string;
+    entity_key: string;
+    reason: string;
+}
+export interface PersonalMemoryAiPlan {
+    requestedAccountId?: number | null;
+    requestedAccountName?: string;
+    accountId: number;
+    accountName: string;
+    model: string;
+    usedFallback?: boolean;
+    fallbackReason?: string;
+    generatedAt: string;
+    summary: string;
+    suggestions: PersonalMemoryAiSuggestion[];
+}
+export interface PersonalMemoryIngestionConfig {
+    enabled: boolean;
+    accountId: number | null;
+    intervalHours: number;
+    focus: string;
+    lastRunAt: string | null;
+    nextRunAt: string | null;
+    updatedAt: string | null;
+}
+export interface PersonalMemoryIngestionRun {
+    id: number;
+    status: 'success' | 'failed' | 'skipped';
+    accountId: number | null;
+    mode: 'heuristic' | 'ai';
+    focus: string;
+    summary: string;
+    sources: string[];
+    createdCount: number;
+    updatedCount: number;
+    resolvedCount: number;
+    error: string;
+    startedAt: string;
+    finishedAt: string | null;
+}
+export interface PersonalMemoryIngestionState {
+    config: PersonalMemoryIngestionConfig;
+    latestRun: PersonalMemoryIngestionRun | null;
+    history: PersonalMemoryIngestionRun[];
+    running: boolean;
+}
+export interface PersonalAccountAiSuggestion {
+    type: 'update';
+    target_id: number;
+    mode?: 'temporary' | 'long_term';
+    status?: 'active' | 'inactive' | 'error';
+    remark?: string;
+    tag_names?: string[];
+    reason: string;
+}
+export interface PersonalAccountAiPlan {
+    requestedAccountId?: number | null;
+    requestedAccountName?: string;
+    accountId: number;
+    accountName: string;
+    model: string;
+    usedFallback?: boolean;
+    fallbackReason?: string;
+    generatedAt: string;
+    summary: string;
+    suggestions: PersonalAccountAiSuggestion[];
+}
+export interface PersonalProxyAiSuggestion {
+    type: 'update';
+    target_id: number;
+    name?: string;
+    is_enabled?: number;
+    is_default?: number;
+    reason: string;
+}
+export interface PersonalProxyAiPlan {
+    requestedAccountId?: number | null;
+    requestedAccountName?: string;
+    accountId: number;
+    accountName: string;
+    model: string;
+    usedFallback?: boolean;
+    fallbackReason?: string;
+    generatedAt: string;
+    summary: string;
+    suggestions: PersonalProxyAiSuggestion[];
+}
+export interface PersonalTokenAiSuggestion {
+    type: 'update';
+    target_id: number;
+    status?: 'active' | 'inactive' | 'error';
+    auto_sync_enabled?: number;
+    note?: string;
+    reason: string;
+}
+export interface PersonalTokenAiPlan {
+    requestedAccountId?: number | null;
+    requestedAccountName?: string;
+    accountId: number;
+    accountName: string;
+    model: string;
+    usedFallback?: boolean;
+    fallbackReason?: string;
+    generatedAt: string;
+    summary: string;
+    suggestions: PersonalTokenAiSuggestion[];
+}
+export interface AgentProfileMemory {
+    id: number;
+    key: string;
+    value: string;
+    category: 'preference' | 'cognitive_style' | 'habit' | 'goal' | 'constraint';
+    confidence: number;
+    source: string;
+    last_observed_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+export interface AgentSkillJournal {
+    id: number;
+    category: 'tool_pattern' | 'workflow' | 'automation' | 'recovery';
+    title: string;
+    summary: string;
+    pattern: string;
+    score: number;
+    evidence_json: string;
+    last_used_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+export interface AgentSkillJournalView extends Omit<AgentSkillJournal, 'evidence_json'> {
+    evidence: string[];
+}
+export interface AgentAutonomyConfig {
+    enabled: boolean;
+    intervalHours: number;
+    executionMode: 'observe_only' | 'guided_execute' | 'full_execute';
+    memoryIngestionEnabled: boolean;
+    ruleAutomationEnabled: boolean;
+    profileLearningEnabled: boolean;
+    skillLearningEnabled: boolean;
+    backupEnabled: boolean;
+    backupDir: string;
+    backupRetentionCount: number;
+    lastRunAt: string | null;
+    nextRunAt: string | null;
+    lastCompactedAt: string | null;
+    updatedAt: string | null;
+}
+export interface AgentAutonomyRun {
+    id: number;
+    status: 'success' | 'failed' | 'skipped';
+    summary: string;
+    actions: string[];
+    backupPath: string;
+    error: string;
+    startedAt: string;
+    finishedAt: string | null;
+}
+export interface AgentRuntimeSnapshot {
+    id: number;
+    status: 'healthy' | 'watch' | 'critical';
+    summary: string;
+    aiHealthyCount: number;
+    aiTotalCount: number;
+    proxyHealthy: boolean;
+    proxyMode: string;
+    memoryHealthy: boolean;
+    ruleHealthy: boolean;
+    newspaperHealthy: boolean;
+    systemLoad: number;
+    memoryUsagePct: number;
+    anomalies: string[];
+    recoveries: string[];
+    metadata: Record<string, any>;
+    createdAt: string;
+}
+export interface AgentRecoveryIncident {
+    id: number;
+    category: 'ai' | 'proxy' | 'memory' | 'rules' | 'server' | 'integration';
+    severity: 'watch' | 'critical';
+    status: 'open' | 'resolved' | 'failed';
+    title: string;
+    detail: string;
+    fingerprint: string;
+    recoveryAction: string;
+    recoveryResult: string;
+    metadata: Record<string, any>;
+    detectedAt: string;
+    resolvedAt: string | null;
+    updatedAt: string;
+}
+export interface AgentCapabilityWeight {
+    id: number;
+    capability: string;
+    weight: number;
+    successCount: number;
+    failureCount: number;
+    neutralCount: number;
+    lastOutcome: 'success' | 'failed' | 'neutral';
+    lastSummary: string;
+    source: string;
+    updatedAt: string;
+}
+export interface AgentRuntimeEvent {
+    id: number;
+    layer: 'raw' | 'short_term' | 'long_term' | 'skill';
+    scope: 'global' | 'page' | 'tool' | 'chat' | 'recovery' | 'task';
+    source: string;
+    eventType: string;
+    title: string;
+    detail: string;
+    content: Record<string, any>;
+    confidence: number;
+    shared: boolean;
+    status: 'active' | 'archived';
+    originRefs: string[];
+    compactedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface AgentRuntimeMemoryState {
+    raw: AgentRuntimeEvent[];
+    shortTerm: AgentRuntimeEvent[];
+    longTerm: AgentRuntimeEvent[];
+    skills: AgentSkillJournalView[];
+    profile: AgentProfileMemory[];
+    totals: {
+        active: {
+            raw: number;
+            shortTerm: number;
+            longTerm: number;
+            skills: number;
+            profile: number;
+        };
+        archived: {
+            raw: number;
+            shortTerm: number;
+            longTerm: number;
+        };
+        cumulative: {
+            raw: number;
+            shortTerm: number;
+            longTerm: number;
+            skills: number;
+            profile: number;
+        };
+        pendingCompaction: number;
+    };
+}
+export interface AgentRuntimeActivityState {
+    runs: AgentAutonomyRun[];
+    incidents: AgentRecoveryIncident[];
+    capabilityWeights: AgentCapabilityWeight[];
+    recentEvents: AgentRuntimeEvent[];
+}
+export interface AgentRuntimePageFamiliarity {
+    path: string;
+    observations: number;
+    toolTouches: number;
+    confidence: number;
+    lastObservedAt: string | null;
+}
+export interface AgentRuntimeView {
+    mode: AgentAutonomyConfig['executionMode'];
+    running: boolean;
+    currentFocusPath: string | null;
+    observationLoop: 'background';
+    latestSnapshot: AgentRuntimeSnapshot | null;
+    pageFamiliarity: AgentRuntimePageFamiliarity[];
+    recentEvents: AgentRuntimeEvent[];
+    memoryTotals: AgentRuntimeMemoryState['totals'];
+    lastCompactedAt: string | null;
+    nextCompactionAt: string | null;
+    compactionState: 'idle' | 'pending' | 'cooldown';
+}
+export interface AgentIncidentReportInput {
+    title: string;
+    detail: string;
+    fingerprint?: string;
+    severity?: AgentRecoveryIncident['severity'];
+    source?: string;
+    kind?: 'render' | 'window_error' | 'unhandled_rejection' | 'api_error' | 'runtime_probe';
+    metadata?: Record<string, any>;
+}
+export interface AgentIncidentReportResult {
+    incident: AgentRecoveryIncident;
+    capability: AgentCapabilityWeight;
+}
+export interface AgentAutonomyState {
+    config: AgentAutonomyConfig;
+    latestRun: AgentAutonomyRun | null;
+    history: AgentAutonomyRun[];
+    running: boolean;
+    profile: AgentProfileMemory[];
+    skills: AgentSkillJournalView[];
+    latestSnapshot: AgentRuntimeSnapshot | null;
+    recentIncidents: AgentRecoveryIncident[];
+    capabilityWeights: AgentCapabilityWeight[];
+    automationHealth: {
+        memoryIngestionEnabled: boolean;
+        ruleAutomationEnabled: boolean;
+        backupEnabled: boolean;
+    };
 }
 export interface PersonalActionState {
     action_id: string;
@@ -1014,6 +1821,7 @@ export interface PersonalOsWorkspace {
     generatedAt: string;
     today: TodayFocus;
     inbox: ActionCenterItem[];
+    recentMails: MailMessage[];
     alerts: ActionCenterItem[];
     entities: PersonalEntityView[];
     rules: PersonalOsRuleView[];
@@ -1026,5 +1834,33 @@ export interface PersonalOsWorkspace {
         pinnedMemoryCount: number;
         ruleCount: number;
     };
+}
+export type OpenTeamsDependencyStatus = 'ready' | 'missing';
+export type OpenTeamsProcessStatus = 'stopped' | 'starting' | 'running' | 'error';
+export interface OpenTeamsStatus {
+    status: OpenTeamsProcessStatus;
+    sourceRoot: string;
+    frontendUrl: string;
+    backendUrl: string;
+    frontendPort: number;
+    backendPort: number;
+    frontendPid: number | null;
+    backendPid: number | null;
+    frontendReady: boolean;
+    backendReady: boolean;
+    dependencies: {
+        source: OpenTeamsDependencyStatus;
+        frontendNodeModules: OpenTeamsDependencyStatus;
+        rootNodeModules: OpenTeamsDependencyStatus;
+        corepack: OpenTeamsDependencyStatus;
+        cargo: OpenTeamsDependencyStatus;
+    };
+    commands: {
+        install: string;
+        prepare: string;
+        dev: string;
+    };
+    lastError: string;
+    updatedAt: string;
 }
 //# sourceMappingURL=index.d.ts.map

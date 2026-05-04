@@ -1,0 +1,105 @@
+---
+title: "Supported Coding Agents"
+description: "A complete guide to every coding agent supported by openteams, including installation and authentication expectations"
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+openteams integrates with a range of coding agents. Each one must be installed and authenticated before you can use it. When you create a task attempt, choose the agent that best fits your workflow.
+
+## Available agents
+
+<CardGroup cols={2}>
+<Card title="Claude Code" icon="/logos/claude.svg" href="/agents/claude-code">
+Claude Code CLI
+</Card>
+
+<Card title="OpenAI Codex" icon="/logos/openai-logo.svg" href="/agents/openai-codex">
+OpenAI Codex CLI
+</Card>
+
+<Card title="GitHub Copilot" icon="/logos/github-copilot-logo.svg" href="/agents/github-copilot">
+GitHub Copilot CLI
+</Card>
+
+<Card title="Gemini CLI" icon="/logos/gemini-logo.svg" href="/agents/gemini-cli">
+Google Gemini CLI
+</Card>
+
+<Card title="Amp" icon="/logos/amp-logo.svg" href="/agents/amp">
+Amp Code
+</Card>
+
+<Card title="Cursor Agent CLI" icon="/logos/cursor-logo.svg" href="/agents/cursor-cli">
+Cursor Agent CLI
+</Card>
+
+<Card title="OpenCode" icon="/logos/opencode.svg" href="/agents/opencode">
+SST OpenCode
+</Card>
+
+<Card title="Droid CLI" icon="/logos/droid-light.svg" href="/agents/droid">
+Factory Droid
+</Card>
+
+<Card title="Claude Code Router" icon="/logos/claude.svg" href="/agents/ccr">
+Claude Code Router - orchestrate multiple models
+</Card>
+
+<Card title="Qwen Code" icon="/logos/qwen-logo.svg" href="/agents/qwen-code">
+Qwen Code CLI
+</Card>
+
+<Card title="Kimi Code" icon="/logos/kimi-logo.svg" href="/agents/kimi-code">
+Kimi Code CLI
+</Card>
+</CardGroup>

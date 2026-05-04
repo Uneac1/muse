@@ -1,5 +1,6 @@
 import { Account } from '../types';
 export declare class SmtpService {
+    private resolveGmailCredentials;
     private createTransport;
     private getEffectiveProvider;
     sendMail(account: Account, data: {

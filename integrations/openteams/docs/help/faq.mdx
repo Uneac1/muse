@@ -1,0 +1,114 @@
+---
+title: "FAQ"
+description: "Answers to common questions about AI member execution, uninstalling openteams, and resetting local data."
+sidebarTitle: "FAQ"
+---
+
+{(() => {
+  if (typeof window === 'undefined') return null;
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var basePath = path === '/docs' || path.startsWith('/docs/') ? '/docs' : '';
+  var relativePath = basePath ? (path.slice(basePath.length) || '/') : path;
+  var localePrefixes = ['zh-Hans', 'zh-Hant', 'ja', 'ko', 'fr'];
+  if (localePrefixes.some(function(prefix) {
+    return relativePath === '/' + prefix || relativePath.startsWith('/' + prefix + '/');
+  })) return null;
+  try {
+    if (document.referrer) {
+      var referrerUrl = new URL(document.referrer);
+      if (referrerUrl.origin === window.location.origin) return null;
+    }
+  } catch (error) {}
+  var candidates = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  var matched = 'en';
+  for (var i = 0; i < candidates.length; i += 1) {
+    var normalized = String(candidates[i] || '').toLowerCase();
+    if (normalized.indexOf('zh-hant') === 0 || normalized.indexOf('zh-tw') === 0 || normalized.indexOf('zh-hk') === 0 || normalized.indexOf('zh-mo') === 0) {
+      matched = 'zh-Hant';
+      break;
+    }
+    if (normalized.indexOf('zh') === 0) {
+      matched = 'zh-Hans';
+      break;
+    }
+    if (normalized.indexOf('ja') === 0) {
+      matched = 'ja';
+      break;
+    }
+    if (normalized.indexOf('ko') === 0) {
+      matched = 'ko';
+      break;
+    }
+    if (normalized.indexOf('fr') === 0) {
+      matched = 'fr';
+      break;
+    }
+  }
+  if (matched === 'en') return null;
+  var targetRelativePath = relativePath === '/' ? '/' + matched : '/' + matched + relativePath;
+  var target = basePath + targetRelativePath + window.location.search + window.location.hash;
+  if (target !== window.location.pathname + window.location.search + window.location.hash) {
+    window.location.replace(target);
+  }
+  return null;
+})()}
+
+## Why did an AI member not return a message?
+
+There are several common reasons:
+
+- If the `@member` chip shows a red dot, the agent failed while processing the message. You can inspect the error from the `Workspace` panel.
+- If the agent ran but did not send a final message, it likely chose not to post one. You can inspect the raw output in `.openteams/runs/<session>/run_records/<session>_<runid>/output.md`.
+- If there was no output during execution and no final output either, the model likely failed internally, or the configured model ID is incorrect. Check the run log for details.
+
+If your case is not covered here, please open an issue on [GitHub](https://github.com/openteams-lab/openteams/issues) and we will look into it.
+
+## Where can I find the error log returned by an AI member?
+
+The error log is stored at `.openteams/runs/<session>/run_records/<session>_<runid>/raw.log` under the AI member workspace path.
+
+## How do I uninstall openteams?
+
+On the Windows desktop app, go to the installation directory, find `Uninstall openteams`, and double-click it.
+
+If you installed the web package with `npx`, run `npx uninstall openteams-web`.
+
+## How do I clear the database?
+
+If you run into an unrecoverable error and need to completely clear the openteams database, delete the application data directory for your operating system.
+
+<Warning>
+This operation is irreversible and deletes all session history and settings. Back up any important data before you continue.
+</Warning>
+
+**Delete the following directory for your operating system:**
+
+<Tabs>
+<Tab title="macOS">
+```bash
+~/Library/Application Support/ai.openteams-lab.openteams/
+```
+</Tab>
+
+<Tab title="Linux">
+```bash
+~/.local/share/openteams/
+```
+</Tab>
+
+<Tab title="Windows">
+```
+%APPDATA%\openteams-lab\openteams\
+```
+
+Usually: `C:\Users\<username>\AppData\Roaming\openteams-lab\openteams\`
+</Tab>
+</Tabs>
+
+After deleting the application data directory, restart openteams to reset it with an empty database and the default settings.
+
+<Note>
+This directory also contains system logs. You can inspect openteams system logs in the `logs` directory.
+</Note>

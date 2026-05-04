@@ -1,0 +1,115 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - .github/workflows/**
+      - '!.github/workflows/test.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.13.1
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Frontend checks
+        run: |
+          pnpm run frontend:lint
+          pnpm run frontend:format:check
+          pnpm run frontend:check
+
+      - name: Check i18n regressions
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+        run: ./scripts/check-i18n.sh
+
+      - name: Build frontend
+        run: cd frontend && pnpm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2025-12-04
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+          cache-provider: "github"
+          cache-on-failure: true
+          shared-key: "shared"
+          cache-all-crates: true
+
+      - name: Install sqlx-cli
+        uses: taiki-e/cache-cargo-install-action@v3
+        with:
+          tool: sqlx-cli
+          no-default-features: true
+          features: sqlite,postgres
+
+      - name: Backend checks
+        run: |
+          pnpm run backend:format:check
+          pnpm run generate-types:check
+          pnpm run prepare-db:check
+          cargo test --workspace
+          pnpm run backend:lint
+
+  test:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - frontend
+      - backend
+    steps:
+      - name: Check aggregate test result
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          needs = json.loads(os.environ['NEEDS_JSON'])
+          results = {name: info['result'] for name, info in needs.items()}
+          failed = {name: result for name, result in results.items() if result != 'success'}
+
+          if failed:
+              print(f"Aggregate test failed: {failed}")
+              sys.exit(1)
+
+          print(f"Aggregate test passed: {results}")
+          PY

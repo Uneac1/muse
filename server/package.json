@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "npx tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc"
+    "build": "node ../scripts/prepare-server-build.js && tsc",
+    "verify:muse-tools": "npm run build && node scripts/verify-ai-muse-tools.js",
+    "verify:agent-autonomy": "npm run build && node scripts/verify-agent-autonomy.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",

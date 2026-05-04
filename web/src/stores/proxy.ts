@@ -18,15 +18,15 @@ interface ProxyStore {
 
 const PROXY_CACHE_KEY = 'muse.proxies.cache';
 const PROXY_CACHE_MAX_AGE_MS = 90 * 1000;
-const proxyCacheEntry = readCache<Proxy[]>(PROXY_CACHE_KEY);
 
 export const useProxyStore = create<ProxyStore>((set, get) => ({
-  proxies: proxyCacheEntry?.value || [],
+  proxies: readCache<Proxy[]>(PROXY_CACHE_KEY)?.value || [],
   loading: false,
   testResult: null,
 
   fetchProxies: async (options) => {
-    if (!options?.force && proxyCacheEntry && isCacheFresh(proxyCacheEntry.updatedAt, PROXY_CACHE_MAX_AGE_MS) && get().proxies.length > 0) {
+    const cacheEntry = readCache<Proxy[]>(PROXY_CACHE_KEY);
+    if (!options?.force && cacheEntry && isCacheFresh(cacheEntry.updatedAt, PROXY_CACHE_MAX_AGE_MS) && get().proxies.length > 0) {
       return;
     }
 
@@ -47,33 +47,33 @@ export const useProxyStore = create<ProxyStore>((set, get) => ({
 
   createProxy: async (data) => {
     await proxyApi.create(data);
-    await get().fetchProxies();
+    await get().fetchProxies({ force: true });
   },
 
   updateProxy: async (id, data) => {
     await proxyApi.update(id, data);
-    await get().fetchProxies();
+    await get().fetchProxies({ force: true });
   },
 
   deleteProxy: async (id) => {
     await proxyApi.delete(id);
-    await get().fetchProxies();
+    await get().fetchProxies({ force: true });
   },
 
   testProxy: async (id) => {
     const result = await proxyApi.test(id);
     set({ testResult: result });
-    await get().fetchProxies();
+    await get().fetchProxies({ force: true });
     return result;
   },
 
   setDefault: async (id) => {
     await proxyApi.setDefault(id);
-    await get().fetchProxies();
+    await get().fetchProxies({ force: true });
   },
 
   setEnabled: async (id, enabled) => {
     await proxyApi.setEnabled(id, enabled);
-    await get().fetchProxies();
+    await get().fetchProxies({ force: true });
   },
 }));

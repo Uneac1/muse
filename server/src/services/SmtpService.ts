@@ -1,9 +1,18 @@
 import { Account } from '../types';
 import { OAuthService } from './OAuthService';
+import { config } from '../config';
 
 const oauthService = new OAuthService();
 
 export class SmtpService {
+  private resolveGmailCredentials(account: Account) {
+    return {
+      clientId: String(account.client_id || config.googleClientId || '').trim(),
+      clientSecret: String(account.client_secret || config.googleClientSecret || '').trim(),
+      refreshToken: String(account.refresh_token || '').trim(),
+    };
+  }
+
   private createTransport(options: any) {
     // nodemailer is already present in the workspace lockfile/node_modules.
     const nodemailer = require('nodemailer');
@@ -56,19 +65,20 @@ export class SmtpService {
     }
 
     if (provider === 'gmail') {
-      if (!account.client_id || !account.client_secret || !account.refresh_token) {
+      const gmail = this.resolveGmailCredentials(account);
+      if (!gmail.clientId || !gmail.clientSecret || !gmail.refreshToken) {
         throw new Error('Gmail authorization is incomplete. Please reconnect Gmail.');
       }
 
-      const token = await oauthService.refreshGoogleToken(account.client_id, account.client_secret, account.refresh_token, proxyId);
+      const token = await oauthService.refreshGoogleToken(gmail.clientId, gmail.clientSecret, gmail.refreshToken, proxyId);
       const transport = this.createTransport({
         service: 'gmail',
         auth: {
           type: 'OAuth2',
           user: account.email,
-          clientId: account.client_id,
-          clientSecret: account.client_secret,
-          refreshToken: account.refresh_token,
+          clientId: gmail.clientId,
+          clientSecret: gmail.clientSecret,
+          refreshToken: gmail.refreshToken,
           accessToken: token.access_token,
         },
       });

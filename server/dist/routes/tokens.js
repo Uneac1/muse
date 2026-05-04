@@ -14,4 +14,6 @@ exports.tokenRoutes.put('/accounts/:id', ctrl.updateAccount);
 exports.tokenRoutes.delete('/accounts/:id', ctrl.deleteAccount);
 exports.tokenRoutes.post('/accounts/:id/sync', ctrl.syncAccount);
 exports.tokenRoutes.post('/sync', ctrl.syncAll);
+exports.tokenRoutes.post('/auto-sync', ctrl.autoSync);
+exports.tokenRoutes.post('/codex/free/import', ctrl.importCodexFree);
 //# sourceMappingURL=tokens.js.map

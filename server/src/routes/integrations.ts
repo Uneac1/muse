@@ -9,6 +9,10 @@ integrationRoutes.post('/github/connect', ctrl.connectGitHub);
 integrationRoutes.post('/github/sync', ctrl.syncGitHub);
 integrationRoutes.delete('/github', ctrl.disconnectGitHub);
 
+integrationRoutes.get('/linuxdo', ctrl.getLinuxDo);
+integrationRoutes.post('/linuxdo/sync', ctrl.syncLinuxDo);
+integrationRoutes.delete('/linuxdo', ctrl.disconnectLinuxDo);
+
 integrationRoutes.get('/cloudflare', ctrl.getCloudflare);
 integrationRoutes.post('/cloudflare/connect', ctrl.connectCloudflare);
 integrationRoutes.post('/cloudflare/sync', ctrl.syncCloudflare);
@@ -30,6 +34,10 @@ integrationRoutes.post('/misub/data', ctrl.saveMiSubData);
 integrationRoutes.post('/misub/settings', ctrl.saveMiSubSettings);
 integrationRoutes.post('/misub/node-count', ctrl.updateMiSubNodeCount);
 integrationRoutes.post('/misub/batch-update-nodes', ctrl.batchUpdateMiSubNodes);
+integrationRoutes.post('/misub/ai/analyze', ctrl.analyzeMiSubWithAi);
+integrationRoutes.get('/misub/ai/inspection', ctrl.getMiSubAiInspection);
+integrationRoutes.post('/misub/ai/inspection', ctrl.updateMiSubAiInspection);
+integrationRoutes.post('/misub/ai/inspection/run', ctrl.runMiSubAiInspection);
 integrationRoutes.delete('/misub', ctrl.disconnectMiSub);
 
 integrationRoutes.get('/ymail', ctrl.getYmail);
